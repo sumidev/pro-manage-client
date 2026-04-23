@@ -3,8 +3,9 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   fetchProjects,
   createProject,
+  searchProject,
 } from "../../features/projects/projectsSlice";
-import { Plus } from "lucide-react";
+import { Plus, SearchIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import Loader from "../../components/Loader";
 import { CreateProjectModal } from "../../features/projects/components/CreateProjectModal";
@@ -18,10 +19,11 @@ const ProjectListPage = () => {
   );
 
   const [createProjectModal, setCreateProjectModal] = useState(false);
-  const [pageNo, setPageNo] = useState(1);
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    dispatch(fetchProjects(pageNo));
+    dispatch(fetchProjects({page, searchQuery}));
   }, [dispatch]);
 
   // 2. Naya Project Create karne ka logic
@@ -39,25 +41,51 @@ const ProjectListPage = () => {
   };
 
   const handlePagination = async (step) => {
-   const newPage = step === 'next' ? pageNo + 1 : pageNo - 1;
-    setPageNo(newPage);
+    const newPage = step === "next" ? page + 1 : page - 1;
+    setPage(newPage);
     dispatch(fetchProjects(newPage));
   };
+
+  const handleProjectSearch = (value) => {
+    setSearchQuery(value);
+    dispatch(fetchProjects({page: 1, searchQuery}));
+  }
 
   return (
     <div className="p-6">
       {/* --- Header Section --- */}
-      <div className="flex justify-between items-center mb-8">
+
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        {/* Left Section: Titles */}
         <div>
           <h1 className="text-3xl font-bold text-gray-800">Projects</h1>
           <p className="text-gray-500 mt-1">Manage your team work here</p>
         </div>
-        <button
-          onClick={() => setCreateProjectModal(true)}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-200"
-        >
-          <Plus size={20} /> Create New Project
-        </button>
+
+        {/* Right Section: Search Bar & Action Button */}
+        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+          {/* Search Input */}
+          <div className="relative w-full sm:w-64">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <SearchIcon size={18} className="text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search projects..."
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-sm"
+              value={searchQuery}
+              onChange={(e) => handleProjectSearch(e.target.value)}
+            />
+          </div>
+
+          {/* Create Button */}
+          <button
+            onClick={() => setCreateProjectModal(true)}
+            className="flex justify-center items-center gap-2 w-full sm:w-auto bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 whitespace-nowrap"
+          >
+            <Plus size={20} /> Create New Project
+          </button>
+        </div>
       </div>
 
       {/* --- Loading State --- */}

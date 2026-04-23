@@ -1,13 +1,17 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, current } from "@reduxjs/toolkit";
 import api from "../../services/api";
-import { createTask } from "../tasks/tasksSlice";
+import { createTask, updateTask, addComment, getComments } from "../tasks/tasksSlice";
 
 export const fetchProjects = createAsyncThunk(
   "projects/fetchAll",
-  async (params, thunkAPI) => {
+  async ({ page = 1, searchQuery = "" }, thunkAPI) => {
     try {
-      const queryParams = new URLSearchParams(params).toString();
-      const response = await api.get(`/projects?page=${params}`);
+      const response = await api.get(`/projects`, {
+        params: {
+          page: page,
+          search: searchQuery,
+        },
+      });
       return response.data.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response.data);
@@ -44,6 +48,18 @@ export const inviteMember = createAsyncThunk(
   async (inviteData, thunkAPI) => {
     try {
       const response = await api.post("/projects/invite", inviteData);
+      return response.data.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response.data);
+    }
+  },
+);
+
+export const searchProject = createAsyncThunk(
+  "project/search",
+  async (param, thunkAPI) => {
+    try {
+      const response = await api.post("/projects/search", param);
       return response.data.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response.data);
@@ -104,25 +120,64 @@ const projectsSlice = createSlice({
         state.project = action.payload;
         state.error = null;
       })
+      .addCase(searchProject.fulfilled, (state, action) => {
+        state.loading = false;
+        state.projects = action.payload;
+        state.error = null;
+      })
+      .addCase(updateTask.fulfilled, (state, action) => {
+        state.loading = false;
+        const updatedTask = action.payload;
+        if (state.project && state.project.tasks) {
+          const stage = updatedTask.stage;
+          const taskId = updatedTask.id;
+          const taskIndex = state.project.tasks[stage].findIndex(
+            (t) => t.id === taskId,
+          );
+          Object.assign(
+            state.project.tasks[stage][taskIndex],
+            updatedTask.update,
+          );
+        }
+      })
       .addCase(createTask.fulfilled, (state, action) => {
         state.loading = false;
         const newTask = action.payload;
-
-        // 2. Hum check kar rahe hain: "Kya project load ho chuka hai?"
-        // Tumhara variable 'project' hai, to hum 'state.project' check karenge
         if (state.project && state.project.tasks) {
-          // 3. Stage nikalo (e.g., 'todo')
           const stageName = newTask.stage || "todo";
-
-          // 4. Safety Check: Agar 'todo' naam ka array nahi mila to bana do
           if (!state.project.tasks[stageName]) {
             state.project.tasks[stageName] = [];
           }
-
-          // 5. PUSH: Naya task list mein add kar do
           state.project.tasks[stageName].unshift(newTask);
         }
         state.error = null;
+      })
+      .addCase(addComment.fulfilled, (state, action) => {
+        state.loading = false;
+        const newComment = action.payload;
+        if (state.project && state.project.tasks) {
+          const stage = newComment.stage;
+          const taskId = newComment.taskId;
+          const taskIndex = state.project.tasks[stage].findIndex(
+            (t) => t.id === taskId,
+          );
+          const task = state.project.tasks[stage][taskIndex];
+          task.comments.push(newComment.comment);
+        }
+      })
+       .addCase(getComments.fulfilled, (state, action) => {
+        state.loading = false;
+        const comments = action.payload;
+        console.log(comments)
+        if (state.project && state.project.tasks) {
+          const stage = comments.stage;
+          const taskId = comments.taskId;
+          const taskIndex = state.project.tasks[stage].findIndex(
+            (t) => t.id === taskId,
+          );
+          const task = state.project.tasks[stage][taskIndex];
+          task.comments = comments.comments;
+        }
       })
       .addMatcher(
         (action) => action.type.endsWith("/pending"),

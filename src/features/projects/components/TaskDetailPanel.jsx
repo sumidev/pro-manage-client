@@ -12,11 +12,18 @@ import {
   CheckCircle2,
   Layout,
 } from "lucide-react";
-import { formatDate } from "../../../utils/dateUtils";
 import { AVAILABLE_STAGES } from "../../../constants/projectConstants";
 import { useDispatch, useSelector } from "react-redux";
-import { moveTaskStage } from "../../tasks/tasksSlice";
+import {
+  addComment,
+  getComments,
+  moveTaskStage,
+  updateTask,
+} from "../../tasks/tasksSlice";
 import { moveTaskOptimistically } from "../projectsSlice";
+import UserSearchDropdown from "@/features/tasks/components/UserSearchDropdown";
+import { Status } from "@/features/tasks/components/Comments/Status";
+import { Comment } from "@/features/tasks/components/Comments/Comment";
 
 // --- HELPER: Stage Colors ---
 const getStageStyles = (stage) => {
@@ -32,7 +39,7 @@ const getStageStyles = (stage) => {
   return "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200";
 };
 
-const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
+const TaskDetailPanel = ({ task, stages, onClose, members, openOnce }) => {
   const [comment, setComment] = useState("");
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const statusRef = useRef(null);
@@ -40,8 +47,6 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
 
   const taskId = task?.id;
   const allTasksMap = useSelector((state) => state.projects.project?.tasks);
-
-  console.log("task : ",allTasksMap);
 
   const liveTask = useMemo(() => {
     if (!allTasksMap) return null;
@@ -54,12 +59,16 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
       }
     }
     return null;
-  }, [allTasksMap, taskId]); // Dependency: Sirf jab Redux data ya ID badle tab chalega
+  }, [allTasksMap, taskId]);
 
-  const taskToRender = liveTask || initialTask;
+  const taskToRender = liveTask || task;
 
-  console.log("taskToRender",taskToRender);
-  // Close dropdown on click outside
+  const [taskForm, setTaskForm] = useState(taskToRender);
+
+  useEffect(() => {
+    setTaskForm(taskToRender);
+  }, [taskToRender]);
+
   useEffect(() => {
     function handleClickOutside(event) {
       if (statusRef.current && !statusRef.current.contains(event.target)) {
@@ -70,7 +79,16 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleStatus = (stageId, stage, oldStage) => {
+  useEffect(() => {
+    const payload = {
+      id: taskId,
+      type: "task",
+    };
+    const stage = taskForm.stage;
+    dispatch(getComments({ payload, taskId, stage }));
+  }, []);
+
+  const handleStatus = (stageId, stage, oldStage, members) => {
     dispatch(
       moveTaskOptimistically({
         taskId: stageId,
@@ -88,6 +106,28 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
     );
 
     setIsStatusOpen(false);
+  };
+
+  const handleFieldSave = (key, value) => {
+    const payload = {
+      id: taskId,
+      data: {
+        [key]: value,
+      },
+    };
+    dispatch(updateTask(payload));
+  };
+
+  const handleComment = () => {
+    const payload = {
+      commentable_id: taskId,
+      commentable_type: "task",
+      description: comment,
+      parent_id: null,
+    };
+    const stage = taskForm.stage;
+    dispatch(addComment({ payload, taskId, stage }));
+    setComment("");
   };
 
   if (!task) return null;
@@ -108,7 +148,7 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
             {/* ID Badge */}
             <div className="flex items-center gap-1.5 text-xs font-mono text-gray-400 bg-gray-50 px-2 py-1 rounded border border-gray-200">
               <Layout size={12} />
-              <span>TASK-{taskToRender.id}</span>
+              <span>TASK-{taskForm.id}</span>
             </div>
 
             {/* ✨ CUSTOM STATUS DROPDOWN ✨ */}
@@ -117,7 +157,7 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
                 onClick={() => setIsStatusOpen(!isStatusOpen)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide border transition-all duration-200 ${getStageStyles(task.stage)}`}
               >
-                {taskToRender.stage}
+                {taskForm.stage}
                 <ChevronDown
                   size={14}
                   className={`transition-transform duration-200 ${isStatusOpen ? "rotate-180" : ""}`}
@@ -132,20 +172,24 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
                     const stageObj = AVAILABLE_STAGES.find(
                       (s) => s.id === stageId,
                     );
-                    const label = stageObj ? stageObj.label : taskToRender.stage; // Agar label na mile to ID dikha do
+                    const label = stageObj ? stageObj.label : taskForm.stage; // Agar label na mile to ID dikha do
 
                     return (
                       <button
                         key={stageId}
                         onClick={() => {
-                          handleStatus(taskToRender.id, stageObj.id, taskToRender.stage);
+                          handleStatus(
+                            taskForm.id,
+                            stageObj.id,
+                            taskForm.stage,
+                          );
                         }}
                         className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between group"
                       >
                         {/* ✅ 2. Use Label Here */}
                         <span>{label}</span>
 
-                        {stageId === taskToRender.stage && (
+                        {stageId === taskForm.stage && (
                           <CheckCircle2 size={16} className="text-blue-600" />
                         )}
                       </button>
@@ -177,18 +221,22 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
         <div className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="p-8 max-w-3xl mx-auto">
             {/* Title Input */}
-            <div className="mb-8 group">
-              <textarea
-                rows={1}
-                defaultValue={taskToRender.name}
-                className="w-full text-3xl font-bold text-gray-900 border-none focus:ring-0 p-0 placeholder-gray-300 resize-none bg-transparent group-hover:bg-gray-50/50 rounded transition-colors -ml-2 px-2 py-1 leading-tight"
-                placeholder="Task Title"
-                onInput={(e) => {
-                  e.target.style.height = "auto";
-                  e.target.style.height = e.target.scrollHeight + "px";
-                }}
-              />
-            </div>
+            <textarea
+              rows={1}
+              value={taskForm.name}
+              onChange={(e) =>
+                setTaskForm({ ...taskForm, name: e.target.value })
+              }
+              // ✨ MAGIC 1: Bahar click karte hi direct save! Koi buttons nahi.
+              onBlur={() => handleFieldSave("name", taskForm.name)}
+              // ✨ MAGIC 2: Tailwind ka `focus:` use karo, state ki zaroorat nahi
+              className="w-full text-3xl font-bold text-gray-900 border border-transparent focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 hover:bg-gray-50/50 resize-none px-2 py-1 -ml-2 rounded transition-all duration-200 outline-none placeholder-gray-300 leading-tight"
+              placeholder="Task Title"
+              onInput={(e) => {
+                e.target.style.height = "auto";
+                e.target.style.height = e.target.scrollHeight + "px";
+              }}
+            />
 
             {/* Properties Grid */}
             <div className="grid grid-cols-2 gap-y-6 gap-x-12 mb-10 p-5 bg-gray-50/50 rounded-xl border border-gray-100/50">
@@ -209,7 +257,8 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
                         className="w-6 h-6 rounded-full ring-2 ring-white"
                       />
                       <span className="text-sm font-medium text-gray-700">
-                        {taskToRender.assigned_to.first_name} {taskToRender.assigned_to.last_name}
+                        {taskToRender.assigned_to.first_name}{" "}
+                        {taskToRender.assigned_to.last_name}
                       </span>
                     </>
                   ) : (
@@ -230,16 +279,28 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
                 <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                   Due Date
                 </label>
-                <div className="flex items-center gap-2 group cursor-pointer hover:bg-gray-100 p-1.5 -ml-1.5 rounded-lg transition-colors">
+
+                <div className="relative flex items-center group -ml-1.5 rounded-lg transition-colors">
+                  {/* Calendar Icon (Absolute positioned taaki input ke upar dikhe) */}
                   <Calendar
                     size={16}
-                    className="text-gray-400 group-hover:text-gray-600"
+                    className="absolute left-2 text-gray-400 group-hover:text-gray-600 pointer-events-none transition-colors"
                   />
-                  <span
-                    className={`text-sm font-medium ${taskToRender.due_date ? "text-gray-700" : "text-gray-400"}`}
-                  >
-                    {taskToRender.due_date ? formatDate(taskToRender.due_date) : "Set date"}
-                  </span>
+
+                  {/* ✨ THE ACTUAL VISIBLE & EDITABLE NATIVE INPUT ✨ */}
+                  <input
+                    type="date"
+                    value={
+                      taskForm.due_date ? taskForm.due_date.split("T")[0] : ""
+                    }
+                    // 1. Type karte waqt ya date select karte waqt local form update
+                    onChange={(e) =>
+                      setTaskForm({ ...taskForm, due_date: e.target.value })
+                    }
+                    // 2. Bahar click karte hi direct Auto-Save (The Notion Way)
+                    onBlur={(e) => handleFieldSave("due_date", e.target.value)}
+                    className="w-full pl-8 pr-2 py-1.5 bg-transparent text-sm font-medium text-gray-700 cursor-pointer rounded-md outline-none transition-all duration-200 hover:bg-gray-100 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                  />
                 </div>
               </div>
 
@@ -250,8 +311,11 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
                 </label>
                 <div className="relative ">
                   <select
-                    defaultValue={taskToRender.priority}
+                    defaultValue={taskForm.priority}
                     className="appearance-none bg-transparent pl-2 pr-8 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    onChange={(e) =>
+                      handleFieldSave("priority", e.target.value)
+                    }
                   >
                     <option value="low">Low Priority</option>
                     <option value="medium">Medium Priority</option>
@@ -261,13 +325,13 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
                   {/* Custom Priority Indicator */}
                   <div
                     className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full 
-                                ${taskToRender.priority === "high" ? "bg-red-500" : taskToRender.priority === "medium" ? "bg-yellow-500" : "bg-blue-400"}`}
+                                ${taskForm.priority === "high" ? "bg-red-500" : taskForm.priority === "medium" ? "bg-yellow-500" : "bg-blue-400"}`}
                   ></div>
                 </div>
               </div>
 
               {/* Reporter (Optional extra field) */}
-              <div className="space-y-1.5">
+              {/* <div className="space-y-1.5">
                 <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                   Reporter
                 </label>
@@ -277,7 +341,19 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
                   </div>
                   <span className="text-sm text-gray-600">You</span>
                 </div>
-              </div>
+              </div> */}
+
+              <UserSearchDropdown
+                label="Assignee"
+                users={members} // Ye array backend se aayega
+                selectedUserId={
+                  taskForm.assigned_to ? taskForm.assigned_to.id : null
+                }
+                onSelect={(userId) => {
+                  setTaskForm({ ...taskForm, assigned_to: userId });
+                  handleFieldSave("assigned_to", userId.id);
+                }}
+              />
             </div>
 
             {/* Description */}
@@ -292,14 +368,19 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
                 <textarea
                   className="w-full text-sm text-gray-700 leading-7 border border-gray-200 rounded-xl p-4 min-h-[120px] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none shadow-sm group-hover:border-gray-300"
                   placeholder="Add a detailed description..."
-                  defaultValue={taskToRender.description}
+                  defaultValue={taskForm.description}
+                  onChange={(e) =>
+                    setTaskForm({ ...taskForm, description: e.target.value })
+                  }
+                  onBlur={() =>
+                    handleFieldSave("description", taskForm.description)
+                  }
                 />
                 <div className="absolute bottom-2 right-2 text-[10px] text-gray-300 pointer-events-none">
                   Markdown supported
                 </div>
               </div>
             </div>
-
             {/* Activity / Comments */}
             <div className="pt-8 border-t border-gray-100">
               <h3 className="text-base font-semibold text-gray-800 mb-6 flex items-center gap-2">
@@ -326,6 +407,7 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
                       <button
                         disabled={!comment.trim()}
                         className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 transition flex items-center gap-2 shadow-sm"
+                        onClick={handleComment}
                       >
                         Send <Send size={12} />
                       </button>
@@ -336,48 +418,19 @@ const TaskDetailPanel = ({ task, stages, onClose, onUpdateTask }) => {
 
               {/* Timeline / History */}
               <div className="space-y-6 relative before:absolute before:left-4 before:top-2 before:bottom-0 before:w-0.5 before:bg-gray-100">
-                {/* Dummy Action (Status Change) */}
-                <div className="relative pl-12">
-                  <div className="absolute left-0 top-0 w-8 h-8 rounded-full bg-white border-2 border-gray-100 flex items-center justify-center z-10">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                {/* ✨ THE MAGIC: Array ko map karke list render karna ✨ */}
+                {taskForm?.comments && taskForm.comments.length > 0 ? (
+                  taskForm.comments.map((commentItem) => (
+                    // Yahan hum apna banaya hua Comment component use kar rahe hain
+                    // Aur usko 'comment' prop pass kar rahe hain
+                    <Comment key={commentItem.id} comment={commentItem} />
+                  ))
+                ) : (
+                  // Agar comments nahi hain toh ye dikhao
+                  <div className="text-sm text-gray-400 pl-10 py-4 italic">
+                    No comments yet. Be the first to start the discussion!
                   </div>
-                  <div className="pt-1">
-                    <p className="text-sm text-gray-800">
-                      <span className="font-semibold">Rahul</span> changed
-                      status from
-                      <span className="mx-1 px-1.5 py-0.5 bg-gray-100 rounded text-xs font-medium text-gray-600">
-                        Todo
-                      </span>
-                      to
-                      <span className="mx-1 px-1.5 py-0.5 bg-blue-50 rounded text-xs font-medium text-blue-600">
-                        In Progress
-                      </span>
-                    </p>
-                    <span className="text-xs text-gray-400 mt-1 block">
-                      2 hours ago
-                    </span>
-                  </div>
-                </div>
-
-                {/* Dummy Comment */}
-                <div className="relative pl-12">
-                  <img
-                    src="https://ui-avatars.com/api/?name=John+Doe&background=0D8ABC&color=fff"
-                    className="absolute left-0 top-0 w-8 h-8 rounded-full border-2 border-white shadow-sm z-10"
-                    alt=""
-                  />
-                  <div className="bg-white border border-gray-200 p-3 rounded-lg rounded-tl-none shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-bold text-gray-900">
-                        John Doe
-                      </span>
-                      <span className="text-xs text-gray-400">Yesterday</span>
-                    </div>
-                    <p className="text-sm text-gray-600 leading-relaxed">
-                      Please check the Figma file for updated color codes.
-                    </p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>

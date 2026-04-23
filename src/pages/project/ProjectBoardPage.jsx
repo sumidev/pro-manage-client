@@ -76,6 +76,7 @@ const ProjectBoardPage = () => {
           task={selectedTask}
           stages={projectDetails.stages} // ✅ Ye pass karna zaroori hai dropdown ke liye
           onClose={() => setSelectedTask(null)}
+          members={projectDetails.members}
         />
       )}
 

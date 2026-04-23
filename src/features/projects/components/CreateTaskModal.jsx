@@ -162,6 +162,8 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, members = [] }) => {
               ))}
             </select>
           </div>
+          <div>
+          </div>
           </div>
 
           {/* Footer Buttons */}

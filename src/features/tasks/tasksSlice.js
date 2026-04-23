@@ -7,13 +7,13 @@ export const createTask = createAsyncThunk(
     try {
       const response = await api.post(
         `/projects/${taskData.projectId}/tasks`,
-        taskData
+        taskData,
       );
       return response.data.data;
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response.data);
     }
-  }
+  },
 );
 
 export const moveTaskStage = createAsyncThunk(
@@ -28,8 +28,45 @@ export const moveTaskStage = createAsyncThunk(
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response.data);
     }
-  }
+  },
 );
+
+export const updateTask = createAsyncThunk(
+  "tasks/update",
+  async ({ id, data }, thunkAPI) => {
+    try {
+      const response = await api.put(`tasks/${id}`, data);
+      return response.data.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response.data);
+    }
+  },
+);
+
+export const addComment = createAsyncThunk(
+  "tasks/comments",
+  async ({payload,taskId,stage}, thunkAPI) => {
+    try {
+      const response = await api.post(`comments`, payload);
+      return {comment : response.data.data ,taskId ,stage};
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response.data);
+    }
+  },
+);
+
+export const getComments = createAsyncThunk(
+  "tasks/getComments/",
+  async({payload,taskId,stage},thunkAPI) => {
+    try{
+      const response = await api.get(`comments`,{ params: payload })
+       return {comments : response.data.data ,taskId ,stage};
+    }catch(error){
+      return thunkAPI.rejectWithValue(error.response.data);
+    }
+  }
+)
+
 const tasksSlice = createSlice({
   name: "tasks",
   initialState: {
@@ -46,14 +83,14 @@ const tasksSlice = createSlice({
         (state) => {
           state.loading = true;
           state.error = null;
-        }
+        },
       )
       .addMatcher(
         (action) => action.type.endsWith("/rejected"),
         (state, action) => {
           state.loading = false;
           state.error = action.payload.message;
-        }
+        },
       );
   },
 });
