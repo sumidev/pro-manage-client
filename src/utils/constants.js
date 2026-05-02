@@ -1,4 +1,4 @@
-import { LayoutDashboard, FolderKanban, User, Settings } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, User, Settings, Users } from 'lucide-react';
 
 export const SIDEBAR_LINKS = [
   { 
@@ -9,18 +9,24 @@ export const SIDEBAR_LINKS = [
   },
   { 
     id: 2, 
+    label: 'User Management', 
+    path: '/user-management', 
+    icon: Users 
+  },
+  { 
+    id: 3, 
     label: 'Projects', 
     path: '/projects', 
     icon: FolderKanban 
   },
   { 
-    id: 3, 
+    id: 4, 
     label: 'Profile', 
     path: '/profile', 
     icon: User 
   },
   { 
-    id: 4, 
+    id: 5, 
     label: 'Settings', 
     path: '/settings', 
     icon: Settings 

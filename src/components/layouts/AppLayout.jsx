@@ -80,10 +80,8 @@ export default function AppLayout() {
 
       {/* ================= MAIN WRAPPER ================= */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        
         {/* ================= TOP NAVBAR ================= */}
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 shadow-sm z-10">
-          
           {/* Left Side: Mobile Menu Button (Hidden on Desktop) & Search */}
           <div className="flex items-center flex-1">
             <button className="md:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md mr-2">
@@ -105,13 +103,13 @@ export default function AppLayout() {
 
           {/* Right Side: Notification Bell & Profile Dropdown */}
           <div className="flex items-center gap-4 ml-4">
-            
             {/* ✨ Ye raha tumhara Bell Component ✨ */}
             <NotificationBell />
 
             {/* User Avatar Placeholder */}
             <div className="h-8 w-8 rounded-full bg-indigo-100 border border-indigo-200 flex items-center justify-center text-indigo-700 font-bold text-sm cursor-pointer hover:ring-2 hover:ring-indigo-500 hover:ring-offset-2 transition-all">
-              SC {/* Sumit Choudhary initials ya api se dynamic initials daal sakte ho */}
+              SC{" "}
+              {/* Sumit Choudhary initials ya api se dynamic initials daal sakte ho */}
             </div>
           </div>
         </header>
