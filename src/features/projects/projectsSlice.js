@@ -1,6 +1,11 @@
 import { createSlice, createAsyncThunk, current } from "@reduxjs/toolkit";
 import api from "../../services/api";
-import { createTask, updateTask, addComment, getComments } from "../tasks/tasksSlice";
+import {
+  createTask,
+  updateTask,
+  addComment,
+  getComments,
+} from "../tasks/tasksSlice";
 
 export const fetchProjects = createAsyncThunk(
   "projects/fetchAll",
@@ -162,13 +167,18 @@ const projectsSlice = createSlice({
             (t) => t.id === taskId,
           );
           const task = state.project.tasks[stage][taskIndex];
-          task.comments.push(newComment.comment);
+
+          if (newComment.comment.parent_id !== null) {
+            const commentIndex = task.comments.findIndex(c => c.id === newComment.comment.parent_id);
+            task.comments[commentIndex].replies.push(newComment.comment);
+          } else {
+            task.comments.push(newComment.comment);
+          }
         }
       })
-       .addCase(getComments.fulfilled, (state, action) => {
+      .addCase(getComments.fulfilled, (state, action) => {
         state.loading = false;
         const comments = action.payload;
-        console.log(comments)
         if (state.project && state.project.tasks) {
           const stage = comments.stage;
           const taskId = comments.taskId;

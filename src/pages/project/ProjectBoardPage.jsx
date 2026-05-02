@@ -30,7 +30,7 @@ const ProjectBoardPage = () => {
   return (
     <div className="flex flex-col h-[calc(100vh-64px)] bg-gray-50 text-gray-800">
       {/* ================= HEADER SECTION ================= */}
-      <div className="bg-white border-b border-gray-200 px-6 py-5 shadow-sm z-10">
+      <div className="bg-white border-b border-gray-200 px-6 py-5 shadow-sm z-1">
         {/* Top Row: Back Btn + Title + Meta */}
         {projectDetails && <ProjectDetails projectDetails={projectDetails} />}
 

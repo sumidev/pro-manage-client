@@ -10,6 +10,7 @@ import DashboardPage from "./pages/dashboard/DashboardPage";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import { loadUser } from "./features/auth/authSlice";
+import AcceptInvitation from "./pages/invitation/AcceptInvitation";
 
 function App() {
   const dispatch = useDispatch();
@@ -31,7 +32,7 @@ function App() {
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
         </Route>
-
+        <Route path="/invitations/accept" element={<AcceptInvitation />} />
         {/* Private Routes (Dashboard/Projects) */}
         <Route path="/" element={<AppLayout />}>
           <Route path="dashboard" element={<DashboardPage />} />

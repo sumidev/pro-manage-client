@@ -43,7 +43,7 @@ const ProjectListPage = () => {
   const handlePagination = async (step) => {
     const newPage = step === "next" ? page + 1 : page - 1;
     setPage(newPage);
-    dispatch(fetchProjects(newPage));
+    dispatch(fetchProjects({page: newPage, searchQuery}));
   };
 
   const handleProjectSearch = (value) => {
