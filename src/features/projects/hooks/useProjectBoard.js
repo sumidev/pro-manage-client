@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 import { fetchProjectById, moveTaskOptimistically } from "../projectsSlice";
 import { createTask, moveTaskStage } from "../../tasks/tasksSlice";
-import { useProjectFilters } from "./useProjectFilters";
+import { useTaskFilters } from "./useTaskFilters";
 
 export const useProjectBoard = () => {
   const { id } = useParams();
@@ -16,7 +16,7 @@ export const useProjectBoard = () => {
   const tasks = project.tasks;
 
   const { filters, handleFilterChange,filteredTasks,clearAllFilters } =
-    useProjectFilters(tasks);
+    useTaskFilters(tasks);
 
   const dispatch = useDispatch();
 

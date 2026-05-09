@@ -5,16 +5,19 @@ import {
   updateTask,
   addComment,
   getComments,
+  deleteTask,
 } from "../tasks/tasksSlice";
 
 export const fetchProjects = createAsyncThunk(
   "projects/fetchAll",
-  async ({ page = 1, searchQuery = "" }, thunkAPI) => {
+  async ({ page = 1, searchQuery = "", filters = {} }, thunkAPI) => {
+    console.log("api",searchQuery);
     try {
       const response = await api.get(`/projects`, {
         params: {
           page: page,
           search: searchQuery,
+          ...filters
         },
       });
       return response.data.data;
@@ -157,6 +160,18 @@ const projectsSlice = createSlice({
         }
         state.error = null;
       })
+      .addCase(deleteTask.fulfilled, (state, action) => {
+        state.loading = false;
+        const task = action.payload;
+        if (state.project && state.project.tasks) {
+          const stageName = task.stage;
+          const taskId = task.id;
+          state.project.tasks[stageName] = state.project.tasks[
+            stageName
+          ].filter(task => task.id !== taskId);
+        }
+        state.error = null;
+      })
       .addCase(addComment.fulfilled, (state, action) => {
         state.loading = false;
         const newComment = action.payload;
@@ -169,7 +184,9 @@ const projectsSlice = createSlice({
           const task = state.project.tasks[stage][taskIndex];
 
           if (newComment.comment.parent_id !== null) {
-            const commentIndex = task.comments.findIndex(c => c.id === newComment.comment.parent_id);
+            const commentIndex = task.comments.findIndex(
+              (c) => c.id === newComment.comment.parent_id,
+            );
             task.comments[commentIndex].replies.push(newComment.comment);
           } else {
             task.comments.push(newComment.comment);

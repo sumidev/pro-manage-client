@@ -1,13 +1,16 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useDispatch } from "react-redux";
+import { fetchProjects } from "../projectsSlice";
 
-export const useProjectFilters = (tasks) => {
+export const useProjectFilters = () => {
   const initialFilter = {
-    search: "",
     dueDate: null,
-    priorities: [],
-    assignees: [],
+    type: [],
   };
   const [filters, setFilters] = useState(initialFilter);
+  const [page, setPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const dispatch = useDispatch();
 
   const handleFilterChange = useCallback((key, value) => {
     setFilters((prev) => {
@@ -29,77 +32,25 @@ export const useProjectFilters = (tasks) => {
     setFilters(initialFilter);
   }, []);
 
-  const filteredTasks = useMemo(() => {
-    if (!tasks) return {};
+  useEffect(() => {
+    dispatch(fetchProjects({ page, searchQuery, filters }));
+  }, [page, searchQuery, filters, dispatch]);
 
-    const result = {};
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  const handlePagination = async (step) => {
+    const newPage = step === "next" ? page + 1 : page - 1;
+    setPage(newPage);
+  };
 
-    Object.keys(tasks).forEach((stage) => {
-      result[stage] = tasks[stage].filter((task) => {
-        const matchesSearch =
-          !filters.search ||
-          task.name.toLowerCase().includes(filters.search.toLowerCase());
-
-        const matchesPriority =
-          filters.priorities.length === 0 ||
-          filters.priorities
-            .map((p) => p.toLowerCase())
-            .includes(task.priority);
-
-        const matchesAssignee =
-          filters.assignees.length === 0 ||
-          filters.assignees.includes(Number(task.assigned_to?.id)) ||
-          (filters.assignees.includes("unassigned") && !task.assigned_to);
-
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const currentDay = today.getDay();
-        const daysUntilSunday = currentDay === 0 ? 0 : 7 - currentDay;
-        const endOfWeek = new Date(today);
-        endOfWeek.setDate(today.getDate() + daysUntilSunday);
-        endOfWeek.setHours(0, 0, 0, 0);
-
-        let matchesDueDate = true;
-
-        if (filters.dueDate && filters.dueDate !== "all") {
-          if (filters.dueDate === "no_date") {
-            matchesDueDate = !task.due_date;
-          } else {
-            if (!task.due_date) {
-              matchesDueDate = false;
-            } else {
-              const taskDate = new Date(task.due_date);
-              taskDate.setHours(0, 0, 0, 0);
-
-              if (filters.dueDate === "today") {
-                matchesDueDate = taskDate.getTime() === today.getTime();
-              } else if (filters.dueDate === "overdue") {
-                matchesDueDate =
-                  taskDate.getTime() < today.getTime() && stage !== "done";
-              } else if (filters.dueDate === "week") {
-                matchesDueDate =
-                  taskDate.getTime() >= today.getTime() &&
-                  taskDate.getTime() <= endOfWeek.getTime();
-              }
-            }
-          }
-        }
-        return (
-          matchesSearch && matchesPriority && matchesAssignee && matchesDueDate
-        );
-      });
-    });
-
-    return result;
-  }, [tasks, filters]);
+  const handleProjectSearch = (value) => {
+    setSearchQuery(value);
+  };
 
   return {
     filters,
     handleFilterChange,
-    filteredTasks,
-    clearAllFilters
+    clearAllFilters,
+    handlePagination,
+    handleProjectSearch,
+    searchQuery
   };
 };

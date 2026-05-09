@@ -41,7 +41,6 @@ const ProjectBoardPage = () => {
           <div className="flex items-center gap-3">
             <div className="relative">
               <TaskFilters
-                tasks={allTasks}
                 members={projectDetails.members}
                 filters={filters}
                 handleFilterChange={handleFilterChange}

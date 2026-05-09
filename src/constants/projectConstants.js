@@ -13,3 +13,11 @@ export const MASTER_STAGES_ORDER = [
   "review",
   "done",
 ];
+
+export const PROJECT_TYPES = [
+  "software",
+  "mobile_app",
+  "website",
+  "design",
+  "marketing"
+];

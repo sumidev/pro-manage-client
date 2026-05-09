@@ -12,6 +12,7 @@ import { useEffect } from "react";
 import { loadUser } from "./features/auth/authSlice";
 import AcceptInvitation from "./pages/invitation/AcceptInvitation";
 import UsersPage from "./pages/user-management/UsersPage";
+import ProtectedRoute from "./components/layouts/ProtectedRoute";
 
 function App() {
   const dispatch = useDispatch();
@@ -35,11 +36,15 @@ function App() {
         </Route>
         <Route path="/invitations/accept" element={<AcceptInvitation />} />
         {/* Private Routes (Dashboard/Projects) */}
-        <Route path="/" element={<AppLayout />}>
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="projects" element={<ProjectListPage />} />
-          <Route path="projects/:id" element={<ProjectBoardPage />} />
+        <Route element={<AppLayout />}>
+          <Route element={<ProtectedRoute allowedRoles={['admin', 'employee', 'client']} />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/projects" element={<ProjectListPage />} />
+            <Route path="/projects/:id" element={<ProjectBoardPage />} />
+          </Route>
+          <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
           <Route path="user-management" element={<UsersPage />} />
+          </Route>
           {/* Future routes: /projects/:id */}
         </Route>
       </Routes>

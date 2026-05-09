@@ -10,6 +10,8 @@ import toast from "react-hot-toast";
 import Loader from "../../components/Loader";
 import { CreateProjectModal } from "../../features/projects/components/CreateProjectModal";
 import { ProjectList } from "../../features/projects/components/ProjectList";
+import { ProjectFilter } from "@/features/projects/components/ProjectFilter";
+import { useProjectFilters } from "@/features/projects/hooks/useProjectFilters";
 
 const ProjectListPage = () => {
   const dispatch = useDispatch();
@@ -19,12 +21,10 @@ const ProjectListPage = () => {
   );
 
   const [createProjectModal, setCreateProjectModal] = useState(false);
-  const [page, setPage] = useState(1);
-  const [searchQuery, setSearchQuery] = useState('');
 
-  useEffect(() => {
-    dispatch(fetchProjects({page, searchQuery}));
-  }, [dispatch]);
+
+  const { filters, handleFilterChange, clearAllFilters, searchQuery, handlePagination, handleProjectSearch } =
+    useProjectFilters(projects);
 
   // 2. Naya Project Create karne ka logic
   const handleCreate = async (payload) => {
@@ -39,17 +39,6 @@ const ProjectListPage = () => {
       console.error(error);
     }
   };
-
-  const handlePagination = async (step) => {
-    const newPage = step === "next" ? page + 1 : page - 1;
-    setPage(newPage);
-    dispatch(fetchProjects({page: newPage, searchQuery}));
-  };
-
-  const handleProjectSearch = (value) => {
-    setSearchQuery(value);
-    dispatch(fetchProjects({page: 1, searchQuery}));
-  }
 
   return (
     <div className="p-6">
@@ -75,6 +64,14 @@ const ProjectListPage = () => {
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-sm"
               value={searchQuery}
               onChange={(e) => handleProjectSearch(e.target.value)}
+            />
+          </div>
+          {/* Search Input */}
+          <div className="relative w-full sm:w-32">
+            <ProjectFilter
+              filters={filters}
+              handleFilterChange={handleFilterChange}
+              clearAllFilters={clearAllFilters}
             />
           </div>
 

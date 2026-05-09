@@ -9,6 +9,7 @@ export default function AppLayout() {
   const isAuth = useSelector(isAuthenticated);
   const location = useLocation();
   const dispatch = useDispatch();
+  const userRole = useSelector((state) => state.auth.user?.system_role) || 'client';
 
   if (!isAuth) {
     return <Navigate to="/login" />;
@@ -34,7 +35,8 @@ export default function AppLayout() {
 
         {/* 2. Navigation Links */}
         <nav className="flex-1 px-3 py-6 space-y-1">
-          {SIDEBAR_LINKS.map((link) => {
+          {SIDEBAR_LINKS.filter((link) => !link.roles || link.roles.includes(userRole))
+          .map((link) => {
             const Icon = link.icon;
             const isActive =
               location.pathname === link.path ||

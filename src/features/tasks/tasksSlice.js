@@ -43,6 +43,18 @@ export const updateTask = createAsyncThunk(
   },
 );
 
+export const deleteTask = createAsyncThunk(
+  "tasks/delete",
+  async ({id, stage }, thunkAPI) => {
+    try {
+      const response = await api.delete(`tasks/${id}`);
+      return {stage, id};
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response.data);
+    }
+  },
+);
+
 export const addComment = createAsyncThunk(
   "tasks/comments",
   async ({payload,taskId,stage}, thunkAPI) => {
@@ -66,6 +78,7 @@ export const getComments = createAsyncThunk(
     }
   }
 )
+
 
 const tasksSlice = createSlice({
   name: "tasks",
