@@ -11,13 +11,13 @@ import {
 export const fetchProjects = createAsyncThunk(
   "projects/fetchAll",
   async ({ page = 1, searchQuery = "", filters = {} }, thunkAPI) => {
-    console.log("api",searchQuery);
+    console.log("api", searchQuery);
     try {
       const response = await api.get(`/projects`, {
         params: {
           page: page,
           search: searchQuery,
-          ...filters
+          ...filters,
         },
       });
       return response.data.data;
@@ -105,6 +105,22 @@ const projectsSlice = createSlice({
         destList.splice(newIndex, 0, movedTask);
       }
     },
+    syncTaskMovement: (state, action) => {
+      const updatedTask = action.payload;
+      const { id, stage: newStage } = updatedTask;
+
+      if (!state.project || !state.project.tasks) return;
+
+      Object.keys(state.project.tasks).forEach((stageName) => {
+        state.project.tasks[stageName] = state.project.tasks[stageName].filter(
+          (task) => task.id !== id,
+        );
+      });
+
+      if (state.project.tasks[newStage]) {
+        state.project.tasks[newStage].push(updatedTask);
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -168,7 +184,7 @@ const projectsSlice = createSlice({
           const taskId = task.id;
           state.project.tasks[stageName] = state.project.tasks[
             stageName
-          ].filter(task => task.id !== taskId);
+          ].filter((task) => task.id !== taskId);
         }
         state.error = null;
       })
@@ -223,5 +239,5 @@ const projectsSlice = createSlice({
   },
 });
 
-export const { moveTaskOptimistically } = projectsSlice.actions;
+export const { moveTaskOptimistically, syncTaskMovement } = projectsSlice.actions;
 export default projectsSlice.reducer;

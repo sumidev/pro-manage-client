@@ -2,9 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
-import { fetchProjectById, moveTaskOptimistically } from "../projectsSlice";
+import { fetchProjectById, moveTaskOptimistically, syncTaskMovement } from "../projectsSlice";
 import { createTask, moveTaskStage } from "../../tasks/tasksSlice";
 import { useTaskFilters } from "./useTaskFilters";
+import echo from "@/utils/echo";
 
 export const useProjectBoard = () => {
   const { id } = useParams();
@@ -13,9 +14,11 @@ export const useProjectBoard = () => {
 
   const projectDetails = project.project;
 
+  const projectId = id;
+
   const tasks = project.tasks;
 
-  const { filters, handleFilterChange,filteredTasks,clearAllFilters } =
+  const { filters, handleFilterChange, filteredTasks, clearAllFilters } =
     useTaskFilters(tasks);
 
   const dispatch = useDispatch();
@@ -75,6 +78,20 @@ export const useProjectBoard = () => {
     dispatch(fetchProjectById(id));
   }, [id, dispatch]);
 
+  useEffect(() => {
+    const channel = echo
+      .private(`project.${projectId}`)
+      .listen(".task.moved", (data) => {
+        console.log("Task moved by another user:", data);
+        // // 🚨 Yahan Redux dispatch kar ke state update kar do
+        dispatch(syncTaskMovement(data.task));
+      });
+
+    return () => {
+      echo.leave(`project.${projectId}`);
+    };
+  }, [projectId,dispatch]);
+
   return {
     projectDetails,
     filteredTasks,
@@ -84,6 +101,6 @@ export const useProjectBoard = () => {
     loading,
     handleDragEnd,
     handleCreateTask,
-    clearAllFilters
+    clearAllFilters,
   };
 };
