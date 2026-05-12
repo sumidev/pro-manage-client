@@ -51,6 +51,18 @@ export const createProject = createAsyncThunk(
   },
 );
 
+export const updateProject = createAsyncThunk(
+  "projects/update",
+  async ({ id, data }, thunkAPI) => {
+    try {
+      const response = await api.put(`projects/${id}`, data);
+      return response.data.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response.data);
+    }
+  },
+);
+
 export const inviteMember = createAsyncThunk(
   "projects/invite",
   async (inviteData, thunkAPI) => {
@@ -89,6 +101,11 @@ const projectsSlice = createSlice({
     error: null,
   },
   reducers: {
+
+    clearProjectDetails: (state) => {
+      state.project = [];
+    },
+
     moveTaskOptimistically: (state, action) => {
       const { taskId, fromStage, toStage, newIndex } = action.payload;
       if (!state.project || !state.project.tasks) return;
@@ -138,6 +155,15 @@ const projectsSlice = createSlice({
         state.loading = false;
         state.projects.unshift(action.payload);
         state.error = null;
+      })
+      .addCase(updateProject.fulfilled, (state, action) => {
+        state.loading = false;
+        if (state.project && state.project.id === action.payload.id) {
+          state.project = {
+            ...state.project,
+            ...action.payload,
+          };
+        }
       })
       .addCase(fetchProjectById.fulfilled, (state, action) => {
         state.loading = false;
@@ -239,5 +265,6 @@ const projectsSlice = createSlice({
   },
 });
 
-export const { moveTaskOptimistically, syncTaskMovement } = projectsSlice.actions;
+export const { moveTaskOptimistically, syncTaskMovement, clearProjectDetails } =
+  projectsSlice.actions;
 export default projectsSlice.reducer;

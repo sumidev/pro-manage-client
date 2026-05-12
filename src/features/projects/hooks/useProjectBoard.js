@@ -2,7 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
-import { fetchProjectById, moveTaskOptimistically, syncTaskMovement } from "../projectsSlice";
+import {
+  clearProjectDetails,
+  fetchProjectById,
+  moveTaskOptimistically,
+  syncTaskMovement,
+} from "../projectsSlice";
 import { createTask, moveTaskStage } from "../../tasks/tasksSlice";
 import { useTaskFilters } from "./useTaskFilters";
 import echo from "@/utils/echo";
@@ -76,6 +81,10 @@ export const useProjectBoard = () => {
 
   useEffect(() => {
     dispatch(fetchProjectById(id));
+
+    return () => {
+      dispatch(clearProjectDetails());
+    };
   }, [id, dispatch]);
 
   useEffect(() => {
@@ -90,7 +99,7 @@ export const useProjectBoard = () => {
     return () => {
       echo.leave(`project.${projectId}`);
     };
-  }, [projectId,dispatch]);
+  }, [projectId, dispatch]);
 
   return {
     projectDetails,

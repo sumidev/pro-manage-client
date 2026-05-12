@@ -1,49 +1,46 @@
 import React from "react";
-import {
-  ArrowLeft,
-  Clock,
-} from "lucide-react";
+import { ArrowLeft, Clock } from "lucide-react";
 import { formatDate } from "../../../utils/dateUtils";
 import TeamDropdownStatic from "./TeamDropdownStatic";
 import { Link } from "react-router-dom";
+import ProjectHeader from "./ProjectHeader";
+import { useDispatch } from "react-redux";
+import { updateProject } from "../projectsSlice";
 
-export const ProjectDetails = ({projectDetails}) => {
+export const ProjectDetails = ({ projectDetails }) => {
+  const dispatch = useDispatch();
+
+  const updateProjectField = async (key, value) => {
+    try {
+      const payload = { id: projectDetails.id, data: { [key]: value } };
+      dispatch(updateProject(payload));
+    } catch (error) {
+      console.error("Failed to update", error);
+    }
+  };
+
   return (
-    <div className="flex justify-between items-start mb-6">
-      <div className="flex gap-4 max-w-4xl">
+    <div className="flex justify-between items-start mb-6 gap-8">
+      {/* Left Side: flex-1 aur w-full lagaya hai taaki ye maximum space le */}
+      <div className="flex gap-4 flex-1 w-full">
         <Link
           to="/"
-          className="mt-1.5 p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition h-fit"
+          className="mt-1.5 p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition h-fit shrink-0"
         >
           <ArrowLeft size={20} />
         </Link>
 
-        <div>
-          {/* Badges */}
-          <div className="flex items-center gap-3 mb-2">
-            <span className="bg-blue-50 text-blue-700 text-xs font-bold px-2 py-0.5 rounded border border-blue-100 uppercase tracking-wide">
-              {projectDetails.type}
-            </span>
-            <span className="flex items-center gap-1.5 bg-green-50 text-green-700 text-xs font-bold px-2 py-0.5 rounded border border-green-200 uppercase tracking-wide">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse"></span>
-              {projectDetails.status}
-            </span>
-          </div>
-
-          {/* Title */}
-          <h1 className="text-2xl font-bold text-gray-900 leading-tight">
-            {projectDetails.name}
-          </h1>
-
-          {/* Description */}
-          <p className="text-gray-500 mt-2 text-sm leading-relaxed max-w-2xl">
-            {projectDetails.description}
-          </p>
+        {/* ProjectHeader ke parent wrapper mein w-full hona zaroori hai agar component ke andar nahi laga */}
+        <div className="w-full">
+          <ProjectHeader
+            projectDetails={projectDetails}
+            onUpdate={updateProjectField}
+          />
         </div>
       </div>
 
-      {/* Right Side: Team & Due Date */}
-      <div className="flex flex-col items-end gap-3">
+      {/* Right Side: Team & Due Date (shrink-0 ensures ye apni fix size rakhe) */}
+      <div className="flex flex-col items-end gap-3 shrink-0">
         <div className="flex items-center -space-x-2">
           <TeamDropdownStatic
             members={projectDetails.members}
