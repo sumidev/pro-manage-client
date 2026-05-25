@@ -1,7 +1,7 @@
 import React from "react";
 import { MoreHorizontal, Calendar, MessageSquare, UserX } from "lucide-react";
 import { Droppable, Draggable } from "@hello-pangea/dnd";
-import Tooltip from "../ui/ToolTip";
+import Tooltip from "../ui/Tooltip";
 import TaskTypeIcon from "../ui/TaskTypeIcon";
 import { getUserColor } from "../../utils/helpers";
 
