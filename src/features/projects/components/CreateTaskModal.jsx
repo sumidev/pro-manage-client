@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { X, Plus, ChevronDown, Check, Flag, User, Calendar, Layers } from "lucide-react";
 import { DropdownPortal } from "@/components/ui/DropdownPortal";
 import InviteMemberButton from "@/components/ui/InviteMemberButton";
+import TaskTypeIcon from "@/components/ui/TaskTypeIcon";
+import { TASK_TYPE_OPTIONS } from "@/constants/taskConstants";
 import { getMemberFullName, getMemberInitials } from "@/utils/memberUtils";
 
 // ── Custom Select (portal-based) ─────────────────────────────────────────────
@@ -25,6 +27,9 @@ const CustomSelect = ({ value, options, onChange, placeholder = "Select..." }) =
         }}
       >
         <div className="flex items-center gap-2 min-w-0">
+          {current?.typeIcon != null && (
+            <TaskTypeIcon type={current.typeIcon} size={12} showTooltip={false} />
+          )}
           {current?.dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: current.dot }} />}
           {current?.avatar && (
             <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ background: current.avatarColor || "var(--accent)" }}>
@@ -55,6 +60,9 @@ const CustomSelect = ({ value, options, onChange, placeholder = "Select..." }) =
               onMouseLeave={(e) => { if (value !== opt.value) e.currentTarget.style.background = "transparent"; }}
             >
               <div className="flex items-center gap-2 min-w-0">
+                {opt.typeIcon != null && (
+                  <TaskTypeIcon type={opt.typeIcon} size={12} showTooltip={false} />
+                )}
                 {opt.dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: opt.dot }} />}
                 {opt.avatar && (
                   <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ background: opt.avatarColor || "var(--accent)" }}>
@@ -85,13 +93,19 @@ const stageOptions = [
   { value: "backlog", label: "Backlog" },
 ];
 
+const typeOptions = TASK_TYPE_OPTIONS.map((t) => ({
+  value: t.value,
+  label: t.label,
+  typeIcon: t.value,
+}));
+
 const avatarColors = ["#6366f1","#8b5cf6","#06b6d4","#10b981","#f59e0b","#ef4444","#ec4899"];
 const getAvatarColor = (id) => avatarColors[(id || 0) % avatarColors.length];
 
 // ── Modal ────────────────────────────────────────────────────────────────────
 const CreateTaskModal = ({ isOpen, onClose, onSubmit, members = [], projectId }) => {
   const [formData, setFormData] = useState({
-    name: "", description: "", priority: "medium",
+    name: "", description: "", type: "task", priority: "medium",
     due_date: "", assigned_to: "", stage: "todo",
   });
 
@@ -104,7 +118,7 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, members = [], projectId })
     if (!formData.name.trim()) return;
     onSubmit(formData);
     onClose();
-    setFormData({ name: "", description: "", priority: "medium", due_date: "", assigned_to: "", stage: "todo" });
+    setFormData({ name: "", description: "", type: "task", priority: "medium", due_date: "", assigned_to: "", stage: "todo" });
   };
 
   const assigneeOptions = [
@@ -185,6 +199,15 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, members = [], projectId })
 
           {/* 2x2 grid */}
           <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="pm-label block mb-1.5">Issue type</label>
+              <CustomSelect
+                value={formData.type}
+                options={typeOptions}
+                onChange={(val) => setFormData({ ...formData, type: val })}
+              />
+            </div>
+
             <div>
               <label className="pm-label flex items-center gap-1 mb-1.5">
                 <Flag size={10} /> Priority

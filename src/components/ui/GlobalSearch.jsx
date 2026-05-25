@@ -6,11 +6,11 @@ import {
   X,
   Loader2,
   FolderKanban,
-  CheckSquare,
   User,
   Clock,
   ArrowRight,
 } from "lucide-react";
+import TaskTypeIcon from "@/components/ui/TaskTypeIcon";
 import api from "@/services/api";
 import { DropdownPortal } from "@/components/ui/DropdownPortal";
 import { AVAILABLE_STAGES } from "@/constants/projectConstants";
@@ -251,12 +251,7 @@ export default function GlobalSearch() {
                         onClick={() => handleTask(task)}
                         className="w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors pm-dropdown-item"
                       >
-                        <div
-                          className="w-8 h-8 rounded flex items-center justify-center shrink-0"
-                          style={{ background: "var(--bg-subtle)", color: "var(--text-secondary)" }}
-                        >
-                          <CheckSquare size={15} />
-                        </div>
+                        <TaskTypeIcon type={task.type} size={14} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold truncate" style={{ color: "var(--text-primary)" }}>
                             {task.name}

@@ -2,6 +2,7 @@ import React from "react";
 import { MoreHorizontal, Calendar, MessageSquare, UserX } from "lucide-react";
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import Tooltip from "../ui/ToolTip";
+import TaskTypeIcon from "../ui/TaskTypeIcon";
 import { getUserColor } from "../../utils/helpers";
 
 const priorityConfig = {
@@ -89,13 +90,16 @@ const TaskCard = ({ task, onTaskClick, provided, snapshot }) => {
         </button>
       </div>
 
-      {/* Title */}
-      <h4
-        className="text-sm font-medium leading-snug mb-3"
-        style={{ color: "var(--text-primary)" }}
-      >
-        {task.name}
-      </h4>
+      {/* Type + title */}
+      <div className="flex items-start gap-2 mb-3 min-w-0">
+        <TaskTypeIcon type={task.type} size={13} className="mt-0.5" />
+        <h4
+          className="text-sm font-medium leading-snug flex-1 min-w-0"
+          style={{ color: "var(--text-primary)" }}
+        >
+          {task.name}
+        </h4>
+      </div>
 
       {/* Footer */}
       <div

@@ -1,7 +1,8 @@
 import React, { useState } from "react";
-import { Search, X, ArrowRight, Layout, Clock } from "lucide-react";
+import { Search, X, ArrowRight, Clock } from "lucide-react";
 
 import { DropdownPortal } from "@/components/ui/DropdownPortal";
+import TaskTypeIcon from "@/components/ui/TaskTypeIcon";
 
 const SearchDropdown = ({ tasks, onSelectedTask }) => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -69,10 +70,13 @@ const SearchDropdown = ({ tasks, onSelectedTask }) => {
                     }}
                     className="px-4 py-3 border-b border-gray-50 hover:bg-blue-50 cursor-pointer flex items-center justify-between group transition"
                   >
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 group-hover:text-blue-700">
-                        {task.name}
-                      </h4>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <TaskTypeIcon type={task.type} size={12} />
+                        <h4 className="text-sm font-medium text-gray-700 group-hover:text-blue-700 truncate">
+                          {task.name}
+                        </h4>
+                      </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span
                           className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase ${task.color}`}

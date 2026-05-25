@@ -27,6 +27,8 @@ import { Comment } from "@/features/tasks/components/Comments/Comment";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import toast from "react-hot-toast";
 import { DropdownPortal } from "@/components/ui/DropdownPortal";
+import TaskTypeIcon from "@/components/ui/TaskTypeIcon";
+import { TASK_TYPE_OPTIONS } from "@/constants/taskConstants";
 
 const priorityConfig = {
   critical: { bg: "#ffebe6", color: "#bf2600", dot: "#de350b", label: "Critical" },
@@ -167,6 +169,7 @@ const TaskDetailPanel = ({ task, stages, onClose, members, projectId }) => {
           style={{ borderBottom: "1px solid #dfe1e6", background: "#fff" }}
         >
           <div className="flex items-center gap-3">
+            <TaskTypeIcon type={taskForm.type} size={14} />
             {/* Issue ID */}
             <div
               className="flex items-center gap-1 px-2 py-1 rounded text-xs font-mono font-semibold"
@@ -261,12 +264,14 @@ const TaskDetailPanel = ({ task, stages, onClose, members, projectId }) => {
           <div className="px-6 py-5 max-w-2xl">
 
             {/* Issue Title */}
-            <textarea
+            <div className="flex items-start gap-2.5 mb-4">
+              <TaskTypeIcon type={taskForm.type} size={16} className="mt-1" />
+              <textarea
               rows={1}
               value={taskForm.name}
               onChange={(e) => setTaskForm({ ...taskForm, name: e.target.value })}
               onBlur={() => handleFieldSave("name", taskForm.name)}
-              className="inline-edit w-full text-xl font-bold leading-snug resize-none mb-4"
+              className="inline-edit flex-1 min-w-0 text-xl font-bold leading-snug resize-none"
               style={{ color: "#172b4d" }}
               placeholder="Issue summary"
               onInput={(e) => {
@@ -274,6 +279,7 @@ const TaskDetailPanel = ({ task, stages, onClose, members, projectId }) => {
                 e.target.style.height = e.target.scrollHeight + "px";
               }}
             />
+            </div>
 
             {/* Properties Grid */}
             <div
@@ -288,6 +294,29 @@ const TaskDetailPanel = ({ task, stages, onClose, members, projectId }) => {
               </div>
 
               <div className="divide-y" style={{ borderColor: "#f4f5f7" }}>
+                {/* Issue type */}
+                <div className="flex items-center px-4 py-2.5 gap-4">
+                  <span className="pm-label w-24 shrink-0">Type</span>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <TaskTypeIcon type={taskForm.type} size={13} showTooltip={false} />
+                    <select
+                      value={taskForm.type || "task"}
+                      onChange={(e) => {
+                        setTaskForm({ ...taskForm, type: e.target.value });
+                        handleFieldSave("type", e.target.value);
+                      }}
+                      className="pm-input flex-1 text-sm py-1.5"
+                      style={{ maxWidth: "200px" }}
+                    >
+                      {TASK_TYPE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
                 {/* Assignee */}
                 <div className="flex items-center px-4 py-2.5 gap-4">
                   <span className="pm-label w-24 shrink-0">Assignee</span>
