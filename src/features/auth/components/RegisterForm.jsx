@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
+import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
 
 export const RegisterForm = ({ onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -10,158 +11,130 @@ export const RegisterForm = ({ onSubmit }) => {
     password: "",
     passwordConfirmation: "",
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const inputClasses =
-    "mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm";
+  const { error } = useSelector((state) => state.auth);
 
-  const { isLoading, error } = useSelector((state) => state.auth);
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = {
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      email: formData.email,
-      password: formData.password,
-      password_confirmation: formData.passwordConfirmation,
-    };
-    onSubmit(payload);
+    setSubmitting(true);
+    try {
+      await onSubmit({
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        password_confirmation: formData.passwordConfirmation,
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
+  const set = (key) => (e) => setFormData({ ...formData, [key]: e.target.value });
+
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-6 bg-white p-4 rounded-lg "
-    >
-      {/* Error Alert */}
+    <div>
+      <h2 className="text-xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>
+        Create your account
+      </h2>
+      <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
+        Start managing projects with your team
+      </p>
+
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-          {error}
+        <div
+          className="flex items-start gap-2.5 px-3 py-2.5 rounded mb-4 text-sm"
+          style={{ background: "var(--red-light)", border: "1px solid #fca5a5", color: "var(--red-text)" }}
+        >
+          <AlertCircle size={15} className="shrink-0 mt-0.5" />
+          <span>{error}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
-        <div>
-          <label
-            htmlFor="first_name"
-            className="block text-sm font-medium text-gray-700"
-          >
-            First Name
-          </label>
-          <input
-            type="text"
-            id="first_name"
-            name="first_name"
-            required
-            className={inputClasses}
-            placeholder="John"
-            onChange={(e) =>
-              setFormData({ ...formData, firstName: e.target.value })
-            }
-          />
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-primary)" }}>
+              First name
+            </label>
+            <input type="text" required placeholder="John" className="pm-input" onChange={set("firstName")} disabled={submitting} />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-primary)" }}>
+              Last name
+            </label>
+            <input type="text" required placeholder="Doe" className="pm-input" onChange={set("lastName")} disabled={submitting} />
+          </div>
         </div>
 
         <div>
-          <label
-            htmlFor="last_name"
-            className="block text-sm font-medium text-gray-700"
-          >
-            Last Name
+          <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-primary)" }}>
+            Email address
+          </label>
+          <input type="email" required placeholder="you@example.com" className="pm-input" onChange={set("email")} disabled={submitting} />
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-primary)" }}>
+            Password
+          </label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              required
+              minLength={8}
+              placeholder="Min. 8 characters"
+              className="pm-input pr-10"
+              onChange={set("password")}
+              disabled={submitting}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+              style={{ color: "var(--text-muted)" }}
+            >
+              {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-primary)" }}>
+            Confirm password
           </label>
           <input
-            type="text"
-            id="last_name"
-            name="last_name"
+            type="password"
             required
-            className={inputClasses}
-            placeholder="Doe"
-            onChange={(e) =>
-              setFormData({ ...formData, lastName: e.target.value })
-            }
+            minLength={8}
+            placeholder="Re-enter password"
+            className="pm-input"
+            onChange={set("passwordConfirmation")}
+            disabled={submitting}
           />
         </div>
-      </div>
 
-      {/* --- Email Field --- */}
-      <div>
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Email address
-        </label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          required
-          className={inputClasses}
-          placeholder="john@example.com"
-          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-        />
-      </div>
-
-      {/* --- Password Field --- */}
-      <div>
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Password
-        </label>
-        <input
-          type="password"
-          id="password"
-          name="password"
-          required
-          className={inputClasses}
-          onChange={(e) =>
-            setFormData({ ...formData, password: e.target.value })
-          }
-        />
-      </div>
-
-      {/* --- Confirm Password Field --- */}
-      <div>
-        <label
-          htmlFor="password_confirmation"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Confirm Password
-        </label>
-        <input
-          type="password"
-          id="password_confirmation"
-          name="password_confirmation"
-          required
-          className={inputClasses}
-          onChange={(e) =>
-            setFormData({ ...formData, passwordConfirmation: e.target.value })
-          }
-        />
-      </div>
-
-      {/* --- Submit Button --- */}
-      <div>
         <button
           type="submit"
-          disabled={isLoading}
-          className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={submitting}
+          className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded text-sm font-semibold text-white transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+          style={{ background: "var(--accent)" }}
+          onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.background = "var(--accent-hover)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent)"; }}
         >
-          {isLoading ? "Creating..." : "Create Account"}
+          {submitting && <Loader2 size={15} className="animate-spin" />}
+          {submitting ? "Creating account..." : "Create account"}
         </button>
-      </div>
+      </form>
 
-      {/* --- Link to Login --- */}
-      <div className="text-sm text-center">
-        <span className="text-gray-600">Already have an account? </span>
-        <Link
-          to="/login"
-          className="font-medium text-blue-600 hover:text-blue-500"
-        >
-          Sign in here
+      <div className="mt-5 pt-4 text-center text-sm" style={{ borderTop: "1px solid var(--border)" }}>
+        <span style={{ color: "var(--text-secondary)" }}>Already have an account? </span>
+        <Link to="/login" className="font-semibold" style={{ color: "var(--accent)" }}>
+          Log in
         </Link>
       </div>
-    </form>
+    </div>
   );
 };

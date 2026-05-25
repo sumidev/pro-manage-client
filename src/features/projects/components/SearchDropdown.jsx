@@ -1,12 +1,15 @@
 import React, { useState } from "react";
 import { Search, X, ArrowRight, Layout, Clock } from "lucide-react";
 
+import { DropdownPortal } from "@/components/ui/DropdownPortal";
+
 const SearchDropdown = ({ tasks, onSelectedTask }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const inputContainerRef = React.useRef(null);
 
   return (
-    <div className="relative group z-50">
+    <div className="relative group z-50" ref={inputContainerRef}>
       {/* Icon */}
       <Search
         className={`absolute left-3 top-1/2 -translate-y-1/2 transition ${
@@ -41,70 +44,67 @@ const SearchDropdown = ({ tasks, onSelectedTask }) => {
         </button>
       )}
 
-      {/* --- THE DROPDOWN (Inside Relative Div) --- */}
-      {isSearchFocused && (
-        <>
-          {/* Backdrop: Outside click handle karne ke liye */}
-          <div
-            className="fixed inset-0 z-[-1]"
-            onClick={() => setIsSearchFocused(false)}
-          ></div>
-
-          <div className="absolute left-0 top-full mt-2 w-96 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-left">
-            {/* Results List */}
-            <div className="max-h-64 overflow-y-auto custom-scrollbar">
-              {searchQuery ? (
-                // Search Filtering Logic
-                tasks
-                  .filter((t) =>
-                    t.name.toLowerCase().includes(searchQuery.toLowerCase())
-                  )
-                  .map((task) => (
-                    <div
-                      key={task.id}
-                      onClick={() => {
-                        onSelectedTask(task)
-                        setIsSearchFocused(false);
-                      }}
-                      className="px-4 py-3 border-b border-gray-50 hover:bg-blue-50 cursor-pointer flex items-center justify-between group transition"
-                    >
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700 group-hover:text-blue-700">
-                          {task.name}
-                        </h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span
-                            className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase ${task.color}`}
-                          >
-                            {task.stage}
-                          </span>
-                          <span className="text-[10px] text-gray-400">
-                            #{task.id}
-                          </span>
-                        </div>
+      {/* --- THE DROPDOWN --- */}
+      <DropdownPortal
+        anchorRef={inputContainerRef}
+        open={isSearchFocused}
+        onClose={() => setIsSearchFocused(false)}
+        align="left"
+      >
+        <div className="mt-2 w-96 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200 origin-top-left">
+          {/* Results List */}
+          <div className="max-h-64 overflow-y-auto custom-scrollbar">
+            {searchQuery ? (
+              // Search Filtering Logic
+              tasks
+                .filter((t) =>
+                  t.name.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((task) => (
+                  <div
+                    key={task.id}
+                    onClick={() => {
+                      onSelectedTask(task)
+                      setIsSearchFocused(false);
+                    }}
+                    className="px-4 py-3 border-b border-gray-50 hover:bg-blue-50 cursor-pointer flex items-center justify-between group transition"
+                  >
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-700 group-hover:text-blue-700">
+                        {task.name}
+                      </h4>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span
+                          className={`text-[10px] px-1.5 py-0.5 rounded font-medium uppercase ${task.color}`}
+                        >
+                          {task.stage}
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          #{task.id}
+                        </span>
                       </div>
-                      <ArrowRight
-                        size={16}
-                        className="text-blue-500 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all"
-                      />
                     </div>
-                  ))
-              ) : (
-                // Recent Views
-                <div className="p-2">
-                  <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase">
-                    Recent
+                    <ArrowRight
+                      size={16}
+                      className="text-blue-500 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all"
+                    />
                   </div>
-                  <div className="px-3 py-2 hover:bg-gray-50 rounded-lg cursor-pointer flex items-center gap-3 text-gray-600">
-                    <Clock size={14} className="text-gray-400" />
-                    <span className="text-sm">Server Migration</span>
-                  </div>
+                ))
+            ) : (
+              // Recent Views
+              <div className="p-2">
+                <div className="px-3 py-2 text-xs font-bold text-gray-400 uppercase">
+                  Recent
                 </div>
-              )}
-            </div>
+                <div className="px-3 py-2 hover:bg-gray-50 rounded-lg cursor-pointer flex items-center gap-3 text-gray-600">
+                  <Clock size={14} className="text-gray-400" />
+                  <span className="text-sm">Server Migration</span>
+                </div>
+              </div>
+            )}
           </div>
-        </>
-      )}
+        </div>
+      </DropdownPortal>
     </div>
   );
 };

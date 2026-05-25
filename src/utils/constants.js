@@ -24,13 +24,6 @@ export const SIDEBAR_LINKS = [
   },
   { 
     id: 4, 
-    label: 'Profile', 
-    path: '/profile', 
-    icon: User,
-    roles: ['admin', 'employee', 'client']
-  },
-  { 
-    id: 5, 
     label: 'Settings', 
     path: '/settings', 
     icon: Settings,

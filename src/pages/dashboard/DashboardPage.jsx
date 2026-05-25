@@ -1,136 +1,229 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { 
-  Briefcase, 
-  CheckCircle, 
-  Clock, 
-  AlertCircle, 
-  Plus, 
-  ArrowRight 
-} from "lucide-react";
+import { Briefcase, CheckCircle2, Clock, Plus, ChevronRight, TrendingUp } from "lucide-react";
 import { fetchDashboardStats } from "../../features/dashboard/dashboardSlice";
 import { STATS_CONFIG } from "../../features/dashboard/dashboardConstants";
 import { formatDate } from "../../utils/dateUtils";
+import DashboardSkeleton from "../../components/skeletons/DashboardSkeleton";
 
-// --- REUSABLE STAT CARD COMPONENT ---
-const StatCard = ({ title, value, icon: Icon, color, bg }) => (
-  <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between">
-    <div>
-      <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-      <h3 className="text-2xl font-bold text-gray-800">{value}</h3>
+const priorityConfig = {
+  critical: { bg: "var(--red-light)",    color: "var(--red-text)",    dot: "var(--red)" },
+  high:     { bg: "var(--orange-light)", color: "var(--orange-text)", dot: "var(--orange)" },
+  medium:   { bg: "var(--yellow-light)", color: "var(--yellow-text)", dot: "var(--yellow)" },
+  low:      { bg: "var(--green-light)",  color: "var(--green-text)",  dot: "var(--green)" },
+};
+
+const statusConfig = {
+  active:    { bg: "var(--green-light)",  color: "var(--green-text)" },
+  completed: { bg: "var(--accent-light)", color: "var(--accent-text)" },
+  on_hold:   { bg: "var(--orange-light)", color: "var(--orange-text)" },
+};
+
+const iconBgMap = [
+  { bg: "var(--accent-light)", color: "var(--accent)" },
+  { bg: "var(--green-light)",  color: "var(--green-text)" },
+  { bg: "var(--orange-light)", color: "var(--orange-text)" },
+  { bg: "var(--red-light)",    color: "var(--red-text)" },
+];
+
+const StatCard = ({ title, value, icon: Icon, index }) => {
+  const { bg, color } = iconBgMap[index % iconBgMap.length];
+  return (
+    <div className="stat-card">
+      <div>
+        <p className="pm-label mb-1">{title}</p>
+        <h3 className="text-2xl font-bold mt-1" style={{ color: "var(--text-primary)" }}>
+          {value ?? 0}
+        </h3>
+      </div>
+      <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0" style={{ background: bg }}>
+        <Icon size={20} style={{ color }} />
+      </div>
     </div>
-    <div className={`p-3 rounded-lg ${bg} ${color}`}>
-      <Icon size={24} />
-    </div>
-  </div>
-);
+  );
+};
 
 const DashboardPage = () => {
-  // Redux se User ka naam lene ke liye
   const { user } = useSelector((state) => state.auth);
-  const {stats, recentProjects, myTasks} = useSelector((state) => state.dashboard);
+  const { stats, recentProjects, myTasks, loading } = useSelector((state) => state.dashboard);
   const dispatch = useDispatch();
-  useEffect(()=>{
-    console.log("testing case");
-    dispatch(fetchDashboardStats());
-  },[]);
+
+  useEffect(() => { dispatch(fetchDashboardStats()); }, [dispatch]);
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+
+  if (loading && !stats) return <DashboardSkeleton />;
 
   return (
-    <div className="space-y-6">
-      
-      {/* 1. WELCOME SECTION */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
+
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">
-            Welcome back, {`${user?.first_name} ${user?.last_name || "User"}`}! 👋
+          <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>
+            {greeting}, {user?.first_name || "there"} 👋
           </h1>
-          <p className="text-gray-500">Here's what's happening with your projects today.</p>
+          <p className="text-sm mt-0.5" style={{ color: "var(--text-secondary)" }}>
+            Here's what's happening across your projects today.
+          </p>
         </div>
-        <Link 
-          to="/projects" // Filhal Projects list pe bhejte hain, baad me Create Modal kholenge
-          className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-indigo-700 transition shadow-sm shadow-indigo-200"
+        <Link
+          to="/projects"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm font-semibold text-white transition-all shrink-0"
+          style={{ background: "var(--accent)" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-hover)"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent)"; }}
         >
-          <Plus size={18} /> New Project
+          <Plus size={15} /> New Project
         </Link>
       </div>
 
-      {/* 2. statss GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {STATS_CONFIG.map((stat, index) => {
-          const value = stats ? stats[stat.key] : 0;
-          return <StatCard key={index} {...stat} value={value} />
-        })}
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {STATS_CONFIG.map((stat, index) => (
+          <StatCard key={index} {...stat} value={stats ? stats[stat.key] : 0} index={index} />
+        ))}
       </div>
 
-      {/* 3. SPLIT SECTION (PROJECTS & TASKS) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* LEFT: Recent Projects (Takes 2 columns) */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-gray-800">Recent Projects</h2>
-            <Link to="/projects" className="text-sm text-indigo-600 font-medium hover:underline flex items-center gap-1">
-              View All <ArrowRight size={16}/>
+      {/* Split section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        {/* Recent Projects */}
+        <div className="lg:col-span-2">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Recent Projects</h2>
+            <Link
+              to="/projects"
+              className="flex items-center gap-1 text-xs font-semibold"
+              style={{ color: "var(--accent)" }}
+            >
+              View all <ChevronRight size={13} />
             </Link>
           </div>
-          
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-             {recentProjects.length > 0 ? (
-                <div className="divide-y divide-gray-100">
-                  {recentProjects.map((project) => (
-                    <Link to={`/projects/${project.id}`} key={project.id} className="p-4 flex items-center justify-between hover:bg-gray-50 transition">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center font-bold text-gray-600">
-                          {project.name.charAt(0)}
-                        </div>
-                        <div>
-                          <h4 className="font-medium text-gray-900">{project.name}</h4>
-                          <span className="text-xs text-gray-500">Updated {formatDate(project.updated_at)}</span>
+
+          <div className="rounded border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+            {/* Table header */}
+            <div
+              className="grid grid-cols-12 px-4 py-2 text-[10px] font-bold uppercase tracking-wide"
+              style={{ background: "var(--bg-subtle)", borderBottom: "1px solid var(--border)", color: "var(--text-muted)" }}
+            >
+              <span className="col-span-5">Project</span>
+              <span className="col-span-3">Status</span>
+              <span className="col-span-4">Updated</span>
+            </div>
+
+            {recentProjects.length > 0 ? (
+              recentProjects.map((project, i) => {
+                const sc = statusConfig[project.status] || statusConfig.active;
+                return (
+                  <Link
+                    to={`/projects/${project.id}`}
+                    key={project.id}
+                    className="grid grid-cols-12 px-4 py-3 items-center transition-all"
+                    style={{ borderBottom: i < recentProjects.length - 1 ? "1px solid var(--bg-subtle)" : "none", color: "inherit", textDecoration: "none" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+                  >
+                    <div className="col-span-5 flex items-center gap-2.5 min-w-0">
+                      <div
+                        className="w-7 h-7 rounded flex items-center justify-center text-white text-xs font-bold shrink-0"
+                        style={{ background: "var(--accent)" }}
+                      >
+                        {project.name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
+                        {project.name}
+                      </span>
+                    </div>
+                    <div className="col-span-3">
+                      <span className="pm-badge" style={{ background: sc.bg, color: sc.color }}>
+                        {project.status?.replace("_", " ")}
+                      </span>
+                    </div>
+                    <div className="col-span-4 text-xs" style={{ color: "var(--text-muted)" }}>
+                      {formatDate(project.updated_at)}
+                    </div>
+                  </Link>
+                );
+              })
+            ) : (
+              <div className="py-12 text-center">
+                <Briefcase size={28} className="mx-auto mb-2" style={{ color: "var(--border)" }} />
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>No projects yet</p>
+                <Link to="/projects" className="text-xs mt-1 inline-block font-semibold" style={{ color: "var(--accent)" }}>
+                  Create your first project
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* My Tasks */}
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>My Tasks</h2>
+            <span className="pm-badge" style={{ background: "var(--accent-light)", color: "var(--accent-text)" }}>
+              {myTasks.length}
+            </span>
+          </div>
+
+          <div className="rounded border overflow-hidden" style={{ background: "var(--bg-card)", borderColor: "var(--border)" }}>
+            {myTasks.length > 0 ? (
+              <div>
+                {myTasks.map((task, i) => {
+                  const pc = priorityConfig[task.priority] || priorityConfig.medium;
+                  return (
+                    <div
+                      key={task.id}
+                      className="flex items-start gap-3 px-4 py-3 cursor-pointer transition-all"
+                      style={{ borderBottom: i < myTasks.length - 1 ? "1px solid var(--bg-subtle)" : "none" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+                    >
+                      <div
+                        className="w-4 h-4 rounded-full border-2 shrink-0 mt-0.5 cursor-pointer transition-all"
+                        style={{ borderColor: "var(--border)" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = "var(--accent)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>
+                          {task.name}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="pm-badge" style={{ background: pc.bg, color: pc.color }}>
+                            <span className="w-1.5 h-1.5 rounded-full inline-block mr-1" style={{ background: pc.dot }} />
+                            {task.priority}
+                          </span>
+                          {task.due_date && (
+                            <span className="flex items-center gap-1 text-[10px]" style={{ color: "var(--text-muted)" }}>
+                              <Clock size={10} /> {formatDate(task.due_date)}
+                            </span>
+                          )}
                         </div>
                       </div>
-                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${project.color}`}>
-                        {project.status}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-             ) : (
-               <div className="p-8 text-center text-gray-500">No projects found.</div>
-             )}
-          </div>
-        </div>
-
-        {/* RIGHT: My Tasks (Takes 1 column) */}
-        <div className="space-y-4">
-          <h2 className="text-lg font-bold text-gray-800">My Tasks</h2>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 space-y-3">
-             {myTasks.map((task) => (
-               <div key={task.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-                 {/* Checkbox visual */}
-                 <div className="mt-1 w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0 cursor-pointer hover:border-indigo-500"></div>
-                 <div>
-                    <h4 className="text-sm font-medium text-gray-800 line-clamp-1">{task.name}</h4>
-                    <div className="flex items-center gap-2 mt-1">
-                       <span className={`text-[10px] px-2 py-0.5 rounded uppercase font-bold tracking-wide 
-                          ${task.priority === 'high' ? 'bg-red-100 text-red-700' : 
-                            task.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' : 
-                            'bg-blue-100 text-blue-700'}`}>
-                          {task.priority}
-                       </span>
-                       <span className="text-xs text-gray-400 flex items-center gap-1">
-                          <Clock size={12} /> {formatDate(task.due_date)}
-                       </span>
                     </div>
-                 </div>
-               </div>
-             ))}
-             <button className="w-full text-center text-sm text-gray-500 hover:text-indigo-600 font-medium py-2">
-               See all tasks
-             </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="py-10 text-center">
+                <CheckCircle2 size={24} className="mx-auto mb-2" style={{ color: "var(--border)" }} />
+                <p className="text-sm" style={{ color: "var(--text-muted)" }}>No tasks assigned</p>
+              </div>
+            )}
+
+            {myTasks.length > 0 && (
+              <div className="px-4 py-2.5 text-center" style={{ borderTop: "1px solid var(--bg-subtle)" }}>
+                <button className="text-xs font-semibold" style={{ color: "var(--accent)" }}>
+                  View all tasks
+                </button>
+              </div>
+            )}
           </div>
         </div>
-
       </div>
     </div>
   );

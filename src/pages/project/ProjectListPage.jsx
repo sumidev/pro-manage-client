@@ -3,9 +3,8 @@ import { useDispatch, useSelector } from "react-redux";
 import {
   fetchProjects,
   createProject,
-  searchProject,
 } from "../../features/projects/projectsSlice";
-import { Plus, SearchIcon } from "lucide-react";
+import { Plus, Search as SearchIcon, LayoutGrid, List } from "lucide-react";
 import toast from "react-hot-toast";
 import Loader from "../../components/Loader";
 import { CreateProjectModal } from "../../features/projects/components/CreateProjectModal";
@@ -15,18 +14,19 @@ import { useProjectFilters } from "@/features/projects/hooks/useProjectFilters";
 
 const ProjectListPage = () => {
   const dispatch = useDispatch();
-
-  const { projects, loading, pagination } = useSelector(
-    (state) => state.projects,
-  );
-
+  const { projects, loading, pagination } = useSelector((state) => state.projects);
   const [createProjectModal, setCreateProjectModal] = useState(false);
+  const [viewMode, setViewMode] = useState("grid"); // grid | list
 
+  const {
+    filters,
+    handleFilterChange,
+    clearAllFilters,
+    searchQuery,
+    handlePagination,
+    handleProjectSearch,
+  } = useProjectFilters(projects);
 
-  const { filters, handleFilterChange, clearAllFilters, searchQuery, handlePagination, handleProjectSearch } =
-    useProjectFilters(projects);
-
-  // 2. Naya Project Create karne ka logic
   const handleCreate = async (payload) => {
     try {
       await toast.promise(dispatch(createProject(payload)).unwrap(), {
@@ -41,64 +41,109 @@ const ProjectListPage = () => {
   };
 
   return (
-    <div className="p-6">
-      {/* --- Header Section --- */}
+    <div className="p-6 max-w-7xl mx-auto">
 
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-        {/* Left Section: Titles */}
+      {/* ===== PAGE HEADER ===== */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800">Projects</h1>
-          <p className="text-gray-500 mt-1">Manage your team work here</p>
+          <h1 className="text-xl font-bold" style={{ color: "#172b4d" }}>
+            Projects
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: "#6b778c" }}>
+            {pagination.totalItems > 0
+              ? `${pagination.totalItems} project${pagination.totalItems !== 1 ? "s" : ""}`
+              : "Manage and track your team's work"}
+          </p>
         </div>
 
-        {/* Right Section: Search Bar & Action Button */}
-        <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
-          {/* Search Input */}
-          <div className="relative w-full sm:w-64">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <SearchIcon size={18} className="text-gray-400" />
-            </div>
+        <button
+          onClick={() => setCreateProjectModal(true)}
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded text-sm font-semibold text-white transition-all shrink-0"
+          style={{ background: "#0052cc" }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#0065ff"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "#0052cc"; }}
+        >
+          <Plus size={15} />
+          Create project
+        </button>
+      </div>
+
+      {/* ===== TOOLBAR ===== */}
+      <div
+        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5 pb-4"
+        style={{ borderBottom: "1px solid #dfe1e6" }}
+      >
+        {/* Left: Search + Filter */}
+        <div className="flex items-center gap-2 flex-1 max-w-lg">
+          {/* Search */}
+          <div
+            className="flex items-center gap-2 flex-1 px-3 py-1.5 rounded border text-sm transition-all"
+            style={{ background: "#fff", borderColor: "#dfe1e6" }}
+            onFocusCapture={(e) => { e.currentTarget.style.borderColor = "#4c9aff"; e.currentTarget.style.boxShadow = "0 0 0 2px #4c9aff40"; }}
+            onBlurCapture={(e) => { e.currentTarget.style.borderColor = "#dfe1e6"; e.currentTarget.style.boxShadow = ""; }}
+          >
+            <SearchIcon size={14} style={{ color: "#97a0af" }} className="shrink-0" />
             <input
               type="text"
               placeholder="Search projects..."
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all shadow-sm"
+              className="flex-1 outline-none bg-transparent text-sm"
+              style={{ color: "#172b4d" }}
               value={searchQuery}
               onChange={(e) => handleProjectSearch(e.target.value)}
             />
           </div>
-          {/* Search Input */}
-          <div className="relative w-full sm:w-32">
-            <ProjectFilter
-              filters={filters}
-              handleFilterChange={handleFilterChange}
-              clearAllFilters={clearAllFilters}
-            />
-          </div>
 
-          {/* Create Button */}
+          {/* Filter */}
+          <ProjectFilter
+            filters={filters}
+            handleFilterChange={handleFilterChange}
+            clearAllFilters={clearAllFilters}
+          />
+        </div>
+
+        {/* Right: View toggle */}
+        <div
+          className="flex items-center rounded border overflow-hidden"
+          style={{ borderColor: "#dfe1e6" }}
+        >
           <button
-            onClick={() => setCreateProjectModal(true)}
-            className="flex justify-center items-center gap-2 w-full sm:w-auto bg-indigo-600 text-white px-5 py-2.5 rounded-lg hover:bg-indigo-700 transition shadow-lg shadow-indigo-200 whitespace-nowrap"
+            onClick={() => setViewMode("grid")}
+            className="p-2 transition-all"
+            style={{
+              background: viewMode === "grid" ? "#e8f0fe" : "#fff",
+              color: viewMode === "grid" ? "#0052cc" : "#6b778c",
+              borderRight: "1px solid #dfe1e6",
+            }}
           >
-            <Plus size={20} /> Create New Project
+            <LayoutGrid size={15} />
+          </button>
+          <button
+            onClick={() => setViewMode("list")}
+            className="p-2 transition-all"
+            style={{
+              background: viewMode === "list" ? "#e8f0fe" : "#fff",
+              color: viewMode === "list" ? "#0052cc" : "#6b778c",
+            }}
+          >
+            <List size={15} />
           </button>
         </div>
       </div>
 
-      {/* --- Loading State --- */}
-      {loading && <Loader />}
-
-      {/* --- Projects Grid List --- */}
-      {!loading && (
+      {/* ===== CONTENT ===== */}
+      {loading ? (
+        <Loader />
+      ) : (
         <ProjectList
           projects={projects}
           showCreateProjectModal={setCreateProjectModal}
           pagination={pagination}
           handlePagination={handlePagination}
+          viewMode={viewMode}
         />
       )}
 
-      {/* --- Create Project Modal (Popup) --- */}
+      {/* ===== CREATE MODAL ===== */}
       {createProjectModal && (
         <CreateProjectModal
           onSubmit={handleCreate}

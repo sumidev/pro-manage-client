@@ -16,14 +16,7 @@ const LoginPage = () => {
     }
   };
 
-  return (
-    <div className="max-w-md w-full mx-auto">
-      <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
-        Welcome Back
-      </h2>
-      <LoginForm onSubmit={handleSubmit} />
-    </div>
-  );
+  return <LoginForm onSubmit={handleSubmit} />;
 };
 
 export default LoginPage;

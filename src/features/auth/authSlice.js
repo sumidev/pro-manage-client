@@ -52,10 +52,79 @@ export const logoutUser = createAsyncThunk(
   },
 );
 
+export const updateProfile = createAsyncThunk(
+  "auth/user/update",
+  async (data, thunkAPI) => {
+    try {
+      const response = await api.post('/user/updateProfile', data,{
+        headers: {
+          'Content-Type': 'multipart/form-data' // Ye lagana safe side ke liye acha hai
+        }});
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response.data);
+    }
+  },
+);
+
+export const updatePassword = createAsyncThunk(
+  "auth/user/updatePassword",
+  async (data, thunkAPI) => {
+    try {
+      const response = await api.post('/user/updatePassword', data);
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data);
+    }
+  },
+);
+
+export const forgotPassword = createAsyncThunk(
+  "auth/forgotPassword",
+  async ({ email }, thunkAPI) => {
+    try {
+      const response = await api.post("/forgot-password", { email });
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data);
+    }
+  },
+);
+
+export const resetPassword = createAsyncThunk(
+  "auth/resetPassword",
+  async ({ token, email, password, password_confirmation }, thunkAPI) => {
+    try {
+      const response = await api.post("/reset-password", {
+        token,
+        email,
+        password,
+        password_confirmation,
+      });
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data);
+    }
+  },
+);
+
+const getAuthErrorMessage = (payload) => {
+  if (!payload) return "Something went wrong.";
+  if (typeof payload.message === "string") return payload.message;
+  if (payload.error) return payload.error;
+  const errors = payload.errors;
+  if (errors && typeof errors === "object") {
+    const first = Object.values(errors)[0];
+    return Array.isArray(first) ? first[0] : String(first);
+  }
+  return "Something went wrong.";
+};
+
 const initialState = {
   user: null,
   token: localStorage.getItem("token") || null,
-  loading: false,
+  loading: false,      // login/register spinner
+  initializing: !!localStorage.getItem("token"), // app boot me loadUser chal raha hai
   error: null,
 };
 
@@ -82,12 +151,17 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload.message;
+        state.error = getAuthErrorMessage(action.payload);
         localStorage.removeItem("token");
       })
       .addCase(logoutUser.fulfilled, (state) => {
         state.user = null;
         state.token = null;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        console.log(action.payload);
+        state.user = action.payload.user;
       })
       .addCase(registerUser.pending, (state) => {
         state.loading = true;
@@ -100,17 +174,41 @@ const authSlice = createSlice({
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload.message;
+        state.error = getAuthErrorMessage(action.payload);
+      })
+      .addCase(forgotPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(forgotPassword.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(forgotPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = getAuthErrorMessage(action.payload);
+      })
+      .addCase(resetPassword.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
+        state.loading = false;
+        state.error = getAuthErrorMessage(action.payload);
       })
       .addCase(loadUser.pending, (state) => {
-        state.loading = true;
+        state.initializing = true;
       })
       .addCase(loadUser.fulfilled, (state, action) => {
-        state.loading = false;
+        state.initializing = false;
         state.user = action.payload;
       })
       .addCase(loadUser.rejected, (state) => {
-        state.loading = false;
+        state.initializing = false;
         state.user = null;
         state.token = null;
         localStorage.removeItem("token");

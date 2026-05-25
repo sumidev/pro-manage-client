@@ -2,15 +2,15 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   X,
   Calendar,
-  User,
   AlignLeft,
-  Paperclip,
   Send,
-  Clock,
   Trash2,
   ChevronDown,
   CheckCircle2,
-  Layout,
+  Hash,
+  Paperclip,
+  MessageSquare,
+  Clock,
 } from "lucide-react";
 import { AVAILABLE_STAGES } from "../../../constants/projectConstants";
 import { useDispatch, useSelector } from "react-redux";
@@ -26,21 +26,25 @@ import UserSearchDropdown from "@/features/tasks/components/UserSearchDropdown";
 import { Comment } from "@/features/tasks/components/Comments/Comment";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import toast from "react-hot-toast";
+import { DropdownPortal } from "@/components/ui/DropdownPortal";
 
-const getStageStyles = (stage) => {
-  const s = stage?.toLowerCase() || "";
-  if (s.includes("done") || s.includes("complete"))
-    return "bg-green-100 text-green-700 border-green-200 hover:bg-green-200";
-  if (s.includes("progress"))
-    return "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-200";
-  if (s.includes("review"))
-    return "bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-200";
-  if (s.includes("bug") || s.includes("issue"))
-    return "bg-red-100 text-red-700 border-red-200 hover:bg-red-200";
-  return "bg-gray-100 text-gray-700 border-gray-200 hover:bg-gray-200";
+const priorityConfig = {
+  critical: { bg: "#ffebe6", color: "#bf2600", dot: "#de350b", label: "Critical" },
+  high:     { bg: "#fff0e6", color: "#974f0c", dot: "#ff991f", label: "High" },
+  medium:   { bg: "#fffae6", color: "#7a5200", dot: "#ffc400", label: "Medium" },
+  low:      { bg: "#e3fcef", color: "#006644", dot: "#36b37e", label: "Low" },
 };
 
-const TaskDetailPanel = ({ task, stages, onClose, members, openOnce }) => {
+const getStageStyle = (stage = "") => {
+  const s = stage.toLowerCase();
+  if (s.includes("done") || s.includes("complete")) return { bg: "#e3fcef", color: "#006644" };
+  if (s.includes("progress")) return { bg: "#e8f0fe", color: "#0052cc" };
+  if (s.includes("review")) return { bg: "#eae6ff", color: "#403294" };
+  if (s.includes("bug") || s.includes("issue")) return { bg: "#ffebe6", color: "#bf2600" };
+  return { bg: "#f4f5f7", color: "#6b778c" };
+};
+
+const TaskDetailPanel = ({ task, stages, onClose, members, projectId }) => {
   const [comment, setComment] = useState("");
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -54,10 +58,8 @@ const TaskDetailPanel = ({ task, stages, onClose, members, openOnce }) => {
   const liveTask = useMemo(() => {
     if (!allTasksMap) return null;
     for (const stageKey of Object.keys(allTasksMap)) {
-      const foundTask = allTasksMap[stageKey].find((t) => t.id === taskId);
-      if (foundTask) {
-        return { ...foundTask, stage: stageKey };
-      }
+      const found = allTasksMap[stageKey].find((t) => t.id === taskId);
+      if (found) return { ...found, stage: stageKey };
     }
     return null;
   }, [allTasksMap, taskId]);
@@ -65,9 +67,7 @@ const TaskDetailPanel = ({ task, stages, onClose, members, openOnce }) => {
   const taskToRender = liveTask || task;
   const [taskForm, setTaskForm] = useState(taskToRender);
 
-  useEffect(() => {
-    setTaskForm(taskToRender);
-  }, [taskToRender]);
+  useEffect(() => { setTaskForm(taskToRender); }, [taskToRender]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -81,30 +81,21 @@ const TaskDetailPanel = ({ task, stages, onClose, members, openOnce }) => {
 
   useEffect(() => {
     const payload = { id: taskId, type: "task" };
-    const stage = taskForm.stage;
-    dispatch(getComments({ payload, taskId, stage }));
+    dispatch(getComments({ payload, taskId, stage: taskForm.stage }));
   }, [taskId]);
 
-  const handleStatus = (stageId, stage, oldStage, members) => {
-    dispatch(
-      moveTaskOptimistically({
-        taskId: stageId,
-        fromStage: oldStage,
-        toStage: stage,
-        newIndex: 0,
-      }),
-    );
+  const handleStatus = (stageId, stage, oldStage) => {
+    dispatch(moveTaskOptimistically({ taskId: stageId, fromStage: oldStage, toStage: stage, newIndex: 0 }));
     dispatch(moveTaskStage({ taskId: stageId, newStage: stage, newIndex: 0 }));
     setIsStatusOpen(false);
   };
 
   const handleFieldSave = (key, value) => {
-    const payload = { id: taskId, data: { [key]: value } };
-    dispatch(updateTask(payload));
+    dispatch(updateTask({ id: taskId, data: { [key]: value } }));
   };
 
-  // ✨ MAIN COMMENT SUBMIT (Parent ID is null)
   const handleComment = () => {
+    if (!comment.trim()) return;
     const payload = {
       commentable_id: taskId,
       commentable_type: "task",
@@ -129,106 +120,155 @@ const TaskDetailPanel = ({ task, stages, onClose, members, openOnce }) => {
     setIsDeleting(true);
     try {
       await toast.promise(
-        dispatch(
-          deleteTask({ id: taskForm.id, stage: taskForm.stage }),
-        ).unwrap(),
+        dispatch(deleteTask({ id: taskForm.id, stage: taskForm.stage })).unwrap(),
         {
-          loading: "Deleting Task...",
-          success: "Task Deleted!",
+          loading: "Deleting issue...",
+          success: "Issue deleted",
           error: (err) => `Error: ${err}`,
-        },
+        }
       );
       setIsModalOpen(false);
+      if (onClose) onClose();
     } catch (error) {
-      console.error(`Error : ${error}`);
+      console.error(error);
     } finally {
       setIsDeleting(false);
-      if (onClose) onClose();
     }
   };
 
   if (!task) return null;
 
+  const stageStyle = getStageStyle(taskForm.stage);
+  const pc = priorityConfig[taskForm.priority] || priorityConfig.medium;
+  const commentCount = Array.isArray(taskForm.comments) ? taskForm.comments.length : 0;
+
   return (
     <>
+      {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[60] transition-opacity duration-300"
+        className="fixed inset-0 z-[60]"
+        style={{ background: "rgba(9,30,66,0.54)" }}
         onClick={onClose}
       />
-      <div className="fixed inset-y-0 right-0 w-full md:w-[650px] bg-white shadow-2xl z-[70] transform transition-transform duration-300 ease-out flex flex-col border-l border-gray-100">
-        {/* === HEADER === */}
-        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-white sticky top-0 z-10">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1.5 text-xs font-mono text-gray-400 bg-gray-50 px-2 py-1 rounded border border-gray-200">
-              <Layout size={12} />
-              <span>TASK-{taskForm.id}</span>
+
+      {/* Panel */}
+      <div
+        className="fixed inset-y-0 right-0 z-[70] flex flex-col slide-in-right"
+        style={{
+          width: "min(680px, 100vw)",
+          background: "#fff",
+          borderLeft: "1px solid #dfe1e6",
+          boxShadow: "-4px 0 24px rgba(9,30,66,0.15)",
+        }}
+      >
+        {/* ===== PANEL HEADER ===== */}
+        <div
+          className="flex items-center justify-between px-5 py-3 shrink-0"
+          style={{ borderBottom: "1px solid #dfe1e6", background: "#fff" }}
+        >
+          <div className="flex items-center gap-3">
+            {/* Issue ID */}
+            <div
+              className="flex items-center gap-1 px-2 py-1 rounded text-xs font-mono font-semibold"
+              style={{ background: "#f4f5f7", color: "#6b778c" }}
+            >
+              <Hash size={11} />
+              {taskForm.id}
             </div>
+
+            {/* Stage dropdown */}
             <div className="relative" ref={statusRef}>
               <button
                 onClick={() => setIsStatusOpen(!isStatusOpen)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-bold uppercase tracking-wide border transition-all duration-200 ${getStageStyles(task.stage)}`}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-bold uppercase tracking-wide transition-all"
+                style={{ background: stageStyle.bg, color: stageStyle.color }}
               >
                 {taskForm.stage}
                 <ChevronDown
-                  size={14}
-                  className={`transition-transform duration-200 ${isStatusOpen ? "rotate-180" : ""}`}
+                  size={12}
+                  className={`transition-transform ${isStatusOpen ? "rotate-180" : ""}`}
                 />
               </button>
-              {isStatusOpen && (
-                <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden py-1 animate-in fade-in zoom-in-95 duration-200">
+
+              <DropdownPortal
+                anchorRef={statusRef}
+                open={isStatusOpen}
+                onClose={() => setIsStatusOpen(false)}
+                align="left"
+                minWidth={176}
+              >
+                <div
+                  className="w-44 rounded shadow-xl border py-1 fade-in"
+                  style={{ background: "#fff", borderColor: "#dfe1e6" }}
+                >
                   {stages.map((stageId) => {
-                    const stageObj = AVAILABLE_STAGES.find(
-                      (s) => s.id === stageId,
-                    );
-                    const label = stageObj ? stageObj.label : taskForm.stage;
+                    const stageObj = AVAILABLE_STAGES.find((s) => s.id === stageId);
+                    const label = stageObj ? stageObj.label : stageId;
+                    const ss = getStageStyle(stageId);
                     return (
                       <button
                         key={stageId}
-                        onClick={() =>
-                          handleStatus(taskForm.id, stageObj.id, taskForm.stage)
-                        }
-                        className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 flex items-center justify-between group"
+                        onClick={() => handleStatus(taskForm.id, stageObj?.id || stageId, taskForm.stage)}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm transition-all text-left"
+                        style={{ color: "#172b4d" }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "#f4f5f7"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
                       >
-                        <span>{label}</span>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase"
+                            style={{ background: ss.bg, color: ss.color }}
+                          >
+                            {label}
+                          </span>
+                        </div>
                         {stageId === taskForm.stage && (
-                          <CheckCircle2 size={16} className="text-blue-600" />
+                          <CheckCircle2 size={14} style={{ color: "#0052cc" }} />
                         )}
                       </button>
                     );
                   })}
                 </div>
-              )}
+              </DropdownPortal>
             </div>
           </div>
+
           <div className="flex items-center gap-1">
             <button
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
               onClick={() => setIsModalOpen(true)}
+              className="p-1.5 rounded transition-all"
+              style={{ color: "#97a0af" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#ffebe6"; e.currentTarget.style.color = "#de350b"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = ""; e.currentTarget.style.color = "#97a0af"; }}
             >
-              <Trash2 size={18} />
+              <Trash2 size={15} />
             </button>
-            <div className="w-px h-6 bg-gray-200 mx-1"></div>
+            <div style={{ width: "1px", height: "20px", background: "#dfe1e6", margin: "0 4px" }} />
             <button
               onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition"
+              className="p-1.5 rounded transition-all"
+              style={{ color: "#6b778c" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#f4f5f7"; e.currentTarget.style.color = "#172b4d"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = ""; e.currentTarget.style.color = "#6b778c"; }}
             >
-              <X size={20} />
+              <X size={16} />
             </button>
           </div>
         </div>
 
-        {/* === SCROLLABLE BODY === */}
+        {/* ===== SCROLLABLE BODY ===== */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-          <div className="p-8 max-w-3xl mx-auto">
+          <div className="px-6 py-5 max-w-2xl">
+
+            {/* Issue Title */}
             <textarea
               rows={1}
               value={taskForm.name}
-              onChange={(e) =>
-                setTaskForm({ ...taskForm, name: e.target.value })
-              }
+              onChange={(e) => setTaskForm({ ...taskForm, name: e.target.value })}
               onBlur={() => handleFieldSave("name", taskForm.name)}
-              className="w-full text-3xl font-bold text-gray-900 border border-transparent focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-50 hover:bg-gray-50/50 resize-none px-2 py-1 -ml-2 rounded transition-all duration-200 outline-none placeholder-gray-300 leading-tight"
-              placeholder="Task Title"
+              className="inline-edit w-full text-xl font-bold leading-snug resize-none mb-4"
+              style={{ color: "#172b4d" }}
+              placeholder="Issue summary"
               onInput={(e) => {
                 e.target.style.height = "auto";
                 e.target.style.height = e.target.scrollHeight + "px";
@@ -236,169 +276,185 @@ const TaskDetailPanel = ({ task, stages, onClose, members, openOnce }) => {
             />
 
             {/* Properties Grid */}
-            <div className="grid grid-cols-2 gap-y-6 gap-x-12 mb-10 p-5 bg-gray-50/50 rounded-xl border border-gray-100/50 mt-6">
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                  Assignee
-                </label>
-                <div className="flex items-center gap-2 group cursor-pointer hover:bg-gray-100 p-1.5 -ml-1.5 rounded-lg transition-colors">
-                  {taskToRender.assigned_to ? (
-                    <>
-                      <img
-                        src={
-                          taskToRender.assigned_to.profile_pic ||
-                          `https://ui-avatars.com/api/?name=${taskToRender.assigned_to.first_name} ${taskToRender.assigned_to.last_name}&background=random`
-                        }
-                        alt="User"
-                        className="w-6 h-6 rounded-full ring-2 ring-white"
-                      />
-                      <span className="text-sm font-medium text-gray-700">
-                        {taskToRender.assigned_to.first_name}{" "}
-                        {taskToRender.assigned_to.last_name}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="w-6 h-6 rounded-full bg-white border border-dashed border-gray-300 flex items-center justify-center text-gray-400">
-                        <User size={12} />
-                      </div>
-                      <span className="text-sm text-gray-400 group-hover:text-blue-600 transition-colors">
-                        Select Assignee
-                      </span>
-                    </>
-                  )}
-                </div>
+            <div
+              className="rounded border mb-5"
+              style={{ borderColor: "#dfe1e6", background: "#fafbfc" }}
+            >
+              <div
+                className="px-4 py-2 text-[10px] font-bold uppercase tracking-wider"
+                style={{ borderBottom: "1px solid #dfe1e6", color: "#6b778c" }}
+              >
+                Details
               </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                  Due Date
-                </label>
-                <div className="relative flex items-center group -ml-1.5 rounded-lg transition-colors">
-                  <Calendar
-                    size={16}
-                    className="absolute left-2 text-gray-400 group-hover:text-gray-600 pointer-events-none transition-colors"
-                  />
-                  <input
-                    type="date"
-                    value={
-                      taskForm.due_date ? taskForm.due_date.split("T")[0] : ""
-                    }
-                    onChange={(e) =>
-                      setTaskForm({ ...taskForm, due_date: e.target.value })
-                    }
-                    onBlur={(e) => handleFieldSave("due_date", e.target.value)}
-                    className="w-full pl-8 pr-2 py-1.5 bg-transparent text-sm font-medium text-gray-700 cursor-pointer rounded-md outline-none transition-all duration-200 hover:bg-gray-100 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+
+              <div className="divide-y" style={{ borderColor: "#f4f5f7" }}>
+                {/* Assignee */}
+                <div className="flex items-center px-4 py-2.5 gap-4">
+                  <span className="pm-label w-24 shrink-0">Assignee</span>
+                  <UserSearchDropdown
+                    label=""
+                    users={members}
+                    projectId={projectId}
+                    selectedUserId={taskForm.assigned_to ? taskForm.assigned_to.id : null}
+                    onSelect={(user) => {
+                      setTaskForm({ ...taskForm, assigned_to: user });
+                      handleFieldSave("assigned_to", user?.id ?? null);
+                    }}
                   />
                 </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-                  Priority
-                </label>
-                <div className="relative ">
-                  <select
-                    defaultValue={taskForm.priority}
-                    onChange={(e) =>
-                      handleFieldSave("priority", e.target.value)
-                    }
-                    className="appearance-none bg-transparent pl-2 pr-8 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  >
-                    <option value="low">Low Priority</option>
-                    <option value="medium">Medium Priority</option>
-                    <option value="high">High Priority</option>
-                    <option value="critical">Critical 🔥</option>
-                  </select>
-                  <div
-                    className={`absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full ${taskForm.priority === "high" ? "bg-red-500" : taskForm.priority === "medium" ? "bg-yellow-500" : "bg-blue-400"}`}
-                  ></div>
+
+                {/* Priority */}
+                <div className="flex items-center px-4 py-2.5 gap-4">
+                  <span className="pm-label w-24 shrink-0">Priority</span>
+                  <div className="relative inline-flex items-center">
+                    <span
+                      className="absolute left-2 w-2 h-2 rounded-full pointer-events-none z-10"
+                      style={{ background: pc.dot }}
+                    />
+                    <select
+                      value={taskForm.priority}
+                      onChange={(e) => {
+                        setTaskForm({ ...taskForm, priority: e.target.value });
+                        handleFieldSave("priority", e.target.value);
+                      }}
+                      className="pl-6 pr-8 py-1 text-xs font-semibold rounded border outline-none cursor-pointer appearance-none"
+                      style={{
+                        background: pc.bg,
+                        color: pc.color,
+                        border: "1px solid transparent",
+                      }}
+                    >
+                      <option value="low">Low</option>
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="critical">Critical</option>
+                    </select>
+                    <ChevronDown size={11} className="absolute right-2 pointer-events-none" style={{ color: pc.color }} />
+                  </div>
+                </div>
+
+                {/* Due Date */}
+                <div className="flex items-center px-4 py-2.5 gap-4">
+                  <span className="pm-label w-24 shrink-0">Due date</span>
+                  <div className="relative flex items-center">
+                    <Calendar size={13} className="absolute left-2 pointer-events-none" style={{ color: "#97a0af" }} />
+                    <input
+                      type="date"
+                      value={taskForm.due_date ? taskForm.due_date.split("T")[0] : ""}
+                      onChange={(e) => setTaskForm({ ...taskForm, due_date: e.target.value })}
+                      onBlur={(e) => handleFieldSave("due_date", e.target.value)}
+                      className="pl-7 pr-2 py-1 text-xs rounded border-0 outline-none cursor-pointer"
+                      style={{ background: "transparent", color: "#172b4d" }}
+                    />
+                  </div>
                 </div>
               </div>
-              <UserSearchDropdown
-                label="Assignee"
-                users={members}
-                selectedUserId={
-                  taskForm.assigned_to ? taskForm.assigned_to.id : null
-                }
-                onSelect={(userId) => {
-                  setTaskForm({ ...taskForm, assigned_to: userId });
-                  handleFieldSave("assigned_to", userId.id);
-                }}
-              />
             </div>
 
-            <div className="mb-10">
-              <div className="flex items-center gap-2 mb-3">
-                <AlignLeft size={18} className="text-gray-500" />
-                <h3 className="text-base font-semibold text-gray-800">
+            {/* Description */}
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-2">
+                <AlignLeft size={14} style={{ color: "#6b778c" }} />
+                <h3 className="text-sm font-semibold" style={{ color: "#172b4d" }}>
                   Description
                 </h3>
               </div>
-              <div className="relative group">
-                <textarea
-                  className="w-full text-sm text-gray-700 leading-7 border border-gray-200 rounded-xl p-4 min-h-[120px] focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all resize-none shadow-sm group-hover:border-gray-300"
-                  placeholder="Add a detailed description..."
-                  defaultValue={taskForm.description}
-                  onChange={(e) =>
-                    setTaskForm({ ...taskForm, description: e.target.value })
-                  }
-                  onBlur={() =>
-                    handleFieldSave("description", taskForm.description)
-                  }
-                />
-                <div className="absolute bottom-2 right-2 text-[10px] text-gray-300 pointer-events-none">
-                  Markdown supported
-                </div>
-              </div>
+              <textarea
+                className="pm-input resize-none min-h-[100px] text-sm leading-relaxed"
+                placeholder="Add a description..."
+                defaultValue={taskForm.description}
+                onChange={(e) => setTaskForm({ ...taskForm, description: e.target.value })}
+                onBlur={() => handleFieldSave("description", taskForm.description)}
+              />
             </div>
 
             {/* Activity / Comments */}
-            <div className="pt-8 border-t border-gray-100">
-              <h3 className="text-base font-semibold text-gray-800 mb-6 flex items-center gap-2">
-                <Clock size={18} className="text-gray-500" /> Activity
-              </h3>
+            <div style={{ borderTop: "1px solid #dfe1e6", paddingTop: "20px" }}>
+              <div className="flex items-center gap-2 mb-4">
+                <MessageSquare size={14} style={{ color: "#6b778c" }} />
+                <h3 className="text-sm font-semibold" style={{ color: "#172b4d" }}>
+                  Activity
+                </h3>
+                {commentCount > 0 && (
+                  <span
+                    className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+                    style={{ background: "#e8f0fe", color: "#0052cc" }}
+                  >
+                    {commentCount}
+                  </span>
+                )}
+              </div>
 
-              {/* Main Comment Input (Bottom) */}
-              <div className="flex gap-4 mb-8 items-start">
-                <div className="w-9 h-9 rounded-full bg-indigo-600 text-white flex items-center justify-center text-sm font-bold shadow-sm shrink-0 mt-1">
+              {/* Comment input */}
+              <div className="flex gap-3 mb-5">
+                <div
+                  className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 mt-0.5"
+                  style={{ background: "#0052cc" }}
+                >
                   ME
                 </div>
-                <div className="flex-1 relative">
-                  <div className="relative shadow-sm bg-white rounded-xl border border-gray-200 focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all">
-                    <textarea
-                      value={comment}
-                      onChange={(e) => setComment(e.target.value)}
-                      className="w-full rounded-t-xl p-3 text-sm focus:outline-none min-h-[70px] resize-none bg-transparent"
-                      placeholder="Write a comment..."
-                    ></textarea>
-                    <div className="flex justify-between items-center p-2 bg-gray-50 rounded-b-xl border-t border-gray-100">
-                      <button className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-200 rounded transition">
-                        <Paperclip size={16} />
-                      </button>
-                      <button
-                        disabled={!comment.trim()}
-                        className="bg-indigo-600 text-white px-4 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 transition flex items-center gap-2 shadow-sm"
-                        onClick={handleComment}
-                      >
-                        Post <Send size={12} />
-                      </button>
-                    </div>
+                <div
+                  className="flex-1 rounded border overflow-hidden"
+                  style={{ borderColor: "#dfe1e6" }}
+                  onFocusCapture={(e) => { e.currentTarget.style.borderColor = "#4c9aff"; e.currentTarget.style.boxShadow = "0 0 0 2px #4c9aff40"; }}
+                  onBlurCapture={(e) => { e.currentTarget.style.borderColor = "#dfe1e6"; e.currentTarget.style.boxShadow = ""; }}
+                >
+                  <textarea
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleComment();
+                    }}
+                    className="w-full p-3 text-sm outline-none resize-none"
+                    style={{ background: "#fafbfc", color: "#172b4d", minHeight: "64px" }}
+                    placeholder="Add a comment... (Ctrl+Enter to submit)"
+                  />
+                  <div
+                    className="flex items-center justify-between px-3 py-2"
+                    style={{ background: "#f4f5f7", borderTop: "1px solid #dfe1e6" }}
+                  >
+                    <button
+                      className="p-1 rounded transition-all"
+                      style={{ color: "#97a0af" }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = "#172b4d"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = "#97a0af"; }}
+                    >
+                      <Paperclip size={13} />
+                    </button>
+                    <button
+                      disabled={!comment.trim()}
+                      onClick={handleComment}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                      style={{ background: "#0052cc" }}
+                      onMouseEnter={(e) => { if (comment.trim()) e.currentTarget.style.background = "#0065ff"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = "#0052cc"; }}
+                    >
+                      <Send size={11} />
+                      Save
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* Timeline / History */}
-              <div className="space-y-6 relative before:absolute before:left-4 before:top-2 before:bottom-0 before:w-0.5 before:bg-gray-100">
+              {/* Comments list */}
+              <div className="space-y-4">
                 {taskForm?.comments && taskForm.comments.length > 0 ? (
                   taskForm.comments.map((commentItem) => (
                     <Comment
                       key={commentItem.id}
                       comment={commentItem}
-                      onSubmitReply={handleInlineReply} // ✨ PASSING INLINE HANDLER
+                      onSubmitReply={handleInlineReply}
                     />
                   ))
                 ) : (
-                  <div className="text-sm text-gray-400 pl-10 py-4 italic">
-                    No comments yet. Be the first to start the discussion!
+                  <div
+                    className="flex flex-col items-center justify-center py-8 rounded border-2 border-dashed text-center"
+                    style={{ borderColor: "#dfe1e6" }}
+                  >
+                    <MessageSquare size={20} className="mb-2" style={{ color: "#dfe1e6" }} />
+                    <p className="text-xs" style={{ color: "#97a0af" }}>
+                      No comments yet. Start the discussion!
+                    </p>
                   </div>
                 )}
               </div>
@@ -406,13 +462,14 @@ const TaskDetailPanel = ({ task, stages, onClose, members, openOnce }) => {
           </div>
         </div>
       </div>
+
       <ConfirmModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onConfirm={handleDeleteConfirm}
         isLoading={isDeleting}
-        title="Delete Task?"
-        message={`Are you sure you want to delete "${taskForm.name}"? This cannot be undone.`}
+        title="Delete issue?"
+        message={`Are you sure you want to delete "${taskForm.name}"? This action cannot be undone.`}
       />
     </>
   );

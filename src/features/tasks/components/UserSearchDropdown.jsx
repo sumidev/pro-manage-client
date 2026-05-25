@@ -1,5 +1,11 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { Search, Check, ChevronDown, UserCircle2 } from "lucide-react";
+import { Search, Check, UserCircle2 } from "lucide-react";
+import { DropdownPortal } from "@/components/ui/DropdownPortal";
+import InviteMemberButton from "@/components/ui/InviteMemberButton";
+import {
+  normalizeMembersForDropdown,
+  getMemberInitials,
+} from "@/utils/memberUtils";
 
 const UserSearchDropdown = ({
   users = [],
@@ -7,149 +13,228 @@ const UserSearchDropdown = ({
   onSelect,
   label = "Assignee",
   placeholder = "Select member...",
+  projectId,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
-  // Click Outside to close logic
+
+  const normalizedUsers = useMemo(
+    () => normalizeMembersForDropdown(users),
+    [users],
+  );
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
-        setSearchTerm(""); // Bahar click karne pe search clear
+        setSearchTerm("");
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filter logic based on search
   const filteredUsers = useMemo(() => {
-    return users.filter(
-      (user) =>
-        user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (user.email &&
-          user.email.toLowerCase().includes(searchTerm.toLowerCase())),
-    );
-  }, [users, searchTerm]);
+    const q = searchTerm.toLowerCase();
+    return normalizedUsers.filter((user) => {
+      const name = `${user.firstName} ${user.lastName}`.toLowerCase();
+      return name.includes(q) || (user.email || "").toLowerCase().includes(q);
+    });
+  }, [normalizedUsers, searchTerm]);
 
-  // Find currently selected user
-  const selectedUser = users.find((u) => u.id === selectedUserId);
+  const selectedUser = normalizedUsers.find((u) => u.id === selectedUserId);
+  const hasMembers = normalizedUsers.length > 0;
 
   return (
-    <div className="space-y-1.5" ref={dropdownRef}>
-      <label className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">
-        {label}
-      </label>
+    <div className="space-y-1.5 flex-1 min-w-0" ref={dropdownRef}>
+      {label ? (
+        <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
+          {label}
+        </label>
+      ) : null}
 
-      <div className="relative">
-        {/* ✨ THE INVISIBLE TRIGGER ✨ */}
+      {!hasMembers && projectId ? (
         <div
-          onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-2 p-1.5 -ml-1.5 rounded-lg cursor-pointer transition-colors duration-200 hover:bg-gray-100 group w-fit"
+          className="rounded-lg p-3 space-y-2"
+          style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}
         >
-          {selectedUser ? (
-            <>
-              {selectedUser.avatar ? (
-                <img
-                  src={selectedUser.avatar}
-                  alt="avatar"
-                  className="w-6 h-6 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-[10px] font-bold">
-                  {selectedUser.firstName.substring(0, 2).toUpperCase()}
-                </div>
-              )}
-              <span className="text-sm font-medium text-gray-700">
-                {selectedUser.firstName}
-              </span>
-            </>
-          ) : (
-            <>
-              <div className="w-6 h-6 rounded-full bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center text-gray-400 group-hover:border-gray-400 transition-colors">
-                <UserCircle2 size={14} />
-              </div>
-              <span className="text-sm font-medium text-gray-400 group-hover:text-gray-600 transition-colors">
-                {placeholder}
-              </span>
-            </>
-          )}
+          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+            No team members yet. Invite someone to assign this issue.
+          </p>
+          <InviteMemberButton projectId={projectId} label="Invite team member" />
         </div>
-
-        {/* ✨ THE DROPDOWN CARD (With Search) ✨ */}
-        {isOpen && (
-          <div className="absolute top-full left-0 mt-1 w-64 bg-white border border-gray-200 shadow-xl rounded-xl z-[100] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            {/* Search Input Area */}
-            <div className="p-2 border-b border-gray-100 bg-gray-50/50">
-              <div className="relative flex items-center">
-                <Search size={14} className="absolute left-2.5 text-gray-400" />
-                <input
-                  type="text"
-                  autoFocus
-                  placeholder="Search members..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-8 pr-3 py-1.5 bg-white border border-gray-200 text-sm rounded-md outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all placeholder:text-gray-400"
-                />
-              </div>
-            </div>
-
-            {/* Users List Area */}
-            <div className="max-h-60 overflow-y-auto p-1 custom-scrollbar bg-white">
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
+      ) : (
+        <div className="relative">
+          <div
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center gap-2 p-1.5 -ml-1.5 rounded-lg cursor-pointer transition-colors w-fit"
+            style={{ color: "var(--text-primary)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
+          >
+            {selectedUser ? (
+              <>
+                {selectedUser.avatar ? (
+                  <img
+                    src={selectedUser.avatar}
+                    alt=""
+                    className="w-6 h-6 rounded-full object-cover"
+                  />
+                ) : (
                   <div
-                    key={user.id}
-                    onClick={() => {
-                      onSelect(user);
-                      setIsOpen(false);
-                      setSearchTerm("");
-                    }}
-                    className={`flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors
-                      ${selectedUserId === user.id ? "bg-blue-50" : "hover:bg-gray-100"}`}
+                    className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold"
+                    style={{ background: "var(--accent-light)", color: "var(--accent-text)" }}
                   >
-                    <div className="flex items-center gap-3">
-                      {user.avatar ? (
-                        <img
-                          src={user.avatar}
-                          alt="avatar"
-                          className="w-7 h-7 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-7 h-7 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center text-[10px] font-bold">
-                          {user.firstName.substring(0, 2).toUpperCase()}
-                        </div>
-                      )}
-                      <div className="flex flex-col">
-                        <span
-                          className={`text-sm ${selectedUserId === user.id ? "font-semibold text-blue-700" : "font-medium text-gray-700"}`}
-                        >
-                          {user.firstName}
-                        </span>
-                        {user.role && (
-                          <span className="text-[10px] text-gray-400">
-                            {user.role}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    {/* Tick Mark for Selected Item */}
-                    {selectedUserId === user.id && (
-                      <Check size={16} className="text-blue-600" />
-                    )}
+                    {getMemberInitials(selectedUser)}
                   </div>
-                ))
-              ) : (
-                <div className="p-4 text-center text-sm text-gray-500 flex flex-col items-center gap-2">
-                  <UserCircle2 size={24} className="text-gray-300" />
-                  No members found
+                )}
+                <span className="text-sm font-medium">
+                  {selectedUser.firstName} {selectedUser.lastName}
+                </span>
+              </>
+            ) : (
+              <>
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center"
+                  style={{ border: "1px dashed var(--border)", color: "var(--text-muted)" }}
+                >
+                  <UserCircle2 size={14} />
+                </div>
+                <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>
+                  {placeholder}
+                </span>
+              </>
+            )}
+          </div>
+
+          <DropdownPortal
+            anchorRef={dropdownRef}
+            open={isOpen}
+            onClose={() => { setIsOpen(false); setSearchTerm(""); }}
+            align="left"
+            minWidth={256}
+          >
+            <div
+              className="rounded border overflow-hidden fade-in"
+              style={{
+                background: "var(--bg-card)",
+                borderColor: "var(--border)",
+                boxShadow: "var(--shadow-lg)",
+              }}
+            >
+              <div className="p-2" style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-subtle)" }}>
+                <div className="relative flex items-center">
+                  <Search size={14} className="absolute left-2.5" style={{ color: "var(--text-muted)" }} />
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Search members..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-8 pr-3 py-1.5 text-sm rounded border outline-none pm-input"
+                  />
+                </div>
+              </div>
+
+              <div className="max-h-60 overflow-y-auto p-1 custom-scrollbar">
+                <div
+                  onClick={() => {
+                    onSelect(null);
+                    setIsOpen(false);
+                    setSearchTerm("");
+                  }}
+                  className="flex items-center gap-2.5 p-2 rounded-md cursor-pointer transition-all"
+                  style={{
+                    background: !selectedUserId ? "var(--accent-light)" : "transparent",
+                  }}
+                  onMouseEnter={(e) => { if (selectedUserId) e.currentTarget.style.background = "var(--bg-hover)"; }}
+                  onMouseLeave={(e) => { if (selectedUserId) e.currentTarget.style.background = "transparent"; }}
+                >
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center"
+                    style={{ border: "1px dashed var(--border)", color: "var(--text-muted)" }}
+                  >
+                    <UserCircle2 size={14} />
+                  </div>
+                  <span className="text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+                    Unassigned
+                  </span>
+                  {!selectedUserId && <Check size={16} style={{ color: "var(--accent)", marginLeft: "auto" }} />}
+                </div>
+
+                {filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <div
+                      key={user.id}
+                      onClick={() => {
+                        onSelect(user);
+                        setIsOpen(false);
+                        setSearchTerm("");
+                      }}
+                      className="flex items-center justify-between p-2 rounded-md cursor-pointer transition-all"
+                      style={{
+                        background: selectedUserId === user.id ? "var(--accent-light)" : "transparent",
+                      }}
+                      onMouseEnter={(e) => {
+                        if (selectedUserId !== user.id) e.currentTarget.style.background = "var(--bg-hover)";
+                      }}
+                      onMouseLeave={(e) => {
+                        if (selectedUserId !== user.id) e.currentTarget.style.background = "transparent";
+                      }}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {user.avatar ? (
+                          <img src={user.avatar} alt="" className="w-7 h-7 rounded-full object-cover shrink-0" />
+                        ) : (
+                          <div
+                            className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
+                            style={{ background: "var(--bg-hover)", color: "var(--text-primary)" }}
+                          >
+                            {getMemberInitials(user)}
+                          </div>
+                        )}
+                        <div className="flex flex-col min-w-0">
+                          <span
+                            className="text-sm font-medium truncate"
+                            style={{
+                              color: selectedUserId === user.id ? "var(--accent-text)" : "var(--text-primary)",
+                            }}
+                          >
+                            {user.firstName} {user.lastName}
+                          </span>
+                          {user.email && (
+                            <span className="text-[10px] truncate" style={{ color: "var(--text-muted)" }}>
+                              {user.email}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {selectedUserId === user.id && (
+                        <Check size={16} style={{ color: "var(--accent)" }} />
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-3 text-center text-xs" style={{ color: "var(--text-muted)" }}>
+                    No members match your search
+                  </div>
+                )}
+              </div>
+
+              {projectId && (
+                <div className="p-2" style={{ borderTop: "1px solid var(--border)" }}>
+                  <InviteMemberButton
+                    projectId={projectId}
+                    label="Invite member"
+                    className="w-full"
+                  />
                 </div>
               )}
             </div>
-          </div>
-        )}
-      </div>
+          </DropdownPortal>
+        </div>
+      )}
     </div>
   );
 };

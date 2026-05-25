@@ -1,32 +1,21 @@
-import React, { useMemo, useState } from "react";
-import {
-  Filter,
-  X,
-  Search,
-  Calendar,
-} from "lucide-react";
-import {
-  dueDates,
-} from "../../../constants/filterConstants";
+import React, { useMemo, useState, useRef } from "react";
+import { Filter, X, Search, Calendar } from "lucide-react";
+import { dueDates } from "../../../constants/filterConstants";
 import { PROJECT_TYPES } from "@/constants/projectConstants";
 import { ProjectTypesList } from "./filterComponents/ProjectTypesList";
+import { DropdownPortal } from "@/components/ui/DropdownPortal";
 
-export const ProjectFilter = ({
-  filters,
-  handleFilterChange,
-  clearAllFilters,
-}) => {
+export const ProjectFilter = ({ filters, handleFilterChange, clearAllFilters }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchProjectType, setSearchProjectType] = useState("");
-
-  const projectypes = PROJECT_TYPES;
+  const btnRef = useRef(null);
 
   const filteredProjectTypes = useMemo(() => {
-    if (!searchProjectType) return projectypes;
-    return projectypes.filter((type) =>
-      type.includes(searchProjectType.toLowerCase()),
+    if (!searchProjectType) return PROJECT_TYPES;
+    return PROJECT_TYPES.filter((type) =>
+      type.toLowerCase().includes(searchProjectType.toLowerCase())
     );
-  }, [searchProjectType, projectypes]);
+  }, [searchProjectType]);
 
   const activeCount =
     (filters.dueDate ? 1 : 0) +
@@ -35,74 +24,80 @@ export const ProjectFilter = ({
 
   return (
     <div className="relative">
-      {/* FILTER BUTTON */}
       <button
+        ref={btnRef}
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 border px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm ${
-          isOpen || activeCount > 0
-            ? "bg-blue-50 border-blue-200 text-blue-700"
-            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-        }`}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded border text-sm font-medium transition-all"
+        style={{
+          background: isOpen || activeCount > 0 ? "#e8f0fe" : "#fff",
+          borderColor: isOpen || activeCount > 0 ? "#4c9aff" : "#dfe1e6",
+          color: isOpen || activeCount > 0 ? "#0052cc" : "#6b778c",
+        }}
       >
-        <Filter size={16} />
+        <Filter size={13} />
         Filter
         {activeCount > 0 && (
-          <span className="ml-1 bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+          <span
+            className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white"
+            style={{ background: "#0052cc" }}
+          >
             {activeCount}
           </span>
         )}
       </button>
 
-      {/* BACKDROP */}
-      {isOpen && (
+      {/* Dropdown using Portal */}
+      <DropdownPortal
+        anchorRef={btnRef}
+        open={isOpen}
+        onClose={() => setIsOpen(false)}
+        align="right"
+        minWidth={288}
+      >
         <div
-          className="fixed inset-0 z-30"
-          onClick={() => setIsOpen(false)}
-        ></div>
-      )}
-
-      {/* DROPDOWN MENU */}
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right overflow-hidden">
+          className="w-72 rounded shadow-xl border fade-in overflow-hidden"
+          style={{ background: "#fff", borderColor: "#dfe1e6" }}
+        >
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Filters
-            </h3>
+          <div
+            className="flex items-center justify-between px-4 py-2.5"
+            style={{ borderBottom: "1px solid #dfe1e6", background: "#f4f5f7" }}
+          >
+            <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "#6b778c" }}>
+              Filter projects
+            </span>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-200 transition"
+              className="p-1 rounded transition-all"
+              style={{ color: "#97a0af" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "#ebecf0"; e.currentTarget.style.color = "#172b4d"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = ""; e.currentTarget.style.color = "#97a0af"; }}
             >
-              <X size={14} />
+              <X size={13} />
             </button>
           </div>
 
-          {/* Body */}
-          <div className="p-4 space-y-6 max-h-[400px] overflow-y-auto custom-scrollbar">
-            {/* 2. ✨ NEW: Due Date Grid */}
+          <div className="p-4 space-y-5 max-h-[360px] overflow-y-auto custom-scrollbar">
+            {/* Due Date */}
             <div>
-              <h4 className="text-xs font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Calendar size={12} className="text-gray-400" /> Due Date
+              <h4 className="pm-label flex items-center gap-1.5 mb-2">
+                <Calendar size={11} /> Deadline
               </h4>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-1.5">
                 {dueDates.map((item) => {
                   const isActive = filters.dueDate === item.value;
                   return (
                     <button
                       key={item.value}
                       onClick={() => handleFilterChange("dueDate", item.value)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all
-                         ${
-                           isActive
-                             ? `bg-blue-50 border-blue-500 ring-1 ring-blue-500 text-blue-700` // Active State
-                             : `${item.color.replace("bg-", "hover:bg-")} border-gray-100 bg-white text-gray-600 hover:border-gray-300` // Normal State
-                         }
-                       `}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs font-medium transition-all"
+                      style={{
+                        background: isActive ? "#e8f0fe" : "#fff",
+                        borderColor: isActive ? "#4c9aff" : "#dfe1e6",
+                        color: isActive ? "#0052cc" : "#6b778c",
+                      }}
                     >
-                      <item.icon
-                        size={14}
-                        className={isActive ? "text-blue-500" : "opacity-70"}
-                      />
+                      <item.icon size={12} />
                       {item.label}
                     </button>
                   );
@@ -110,57 +105,38 @@ export const ProjectFilter = ({
               </div>
             </div>
 
-            {/* <div>
-              <h4 className="text-xs font-semibold text-gray-900 mb-3">
-                Priority
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {priorities.map((p) => {
-                  const isSelected = filters.priorities.includes(p.label);
-                  return (
-                    <button
-                      key={p.label}
-                      onClick={() => handleFilterChange("priorities", p.label)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 
-                        ${
-                          isSelected
-                            ? "bg-gray-800 text-white border-gray-800 shadow-sm"
-                            : `${p.color} border-transparent`
-                        }`}
-                    >
-                      {isSelected && <Check size={12} />}
-                      {p.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div> */}
-
+            {/* Project Type */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-semibold text-gray-900">
-                  Categories
-                </h4>
-                <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">
+                <h4 className="pm-label">Project type</h4>
+                <span
+                  className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                  style={{ background: "#f4f5f7", color: "#6b778c" }}
+                >
                   {filteredProjectTypes.length}
                 </span>
               </div>
-              <div className="relative mb-2">
-                <Search
-                  className="absolute left-2.5 top-2 text-gray-400 pointer-events-none"
-                  size={13}
-                />
+
+              <div
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded border mb-2"
+                style={{ background: "#fafbfc", borderColor: "#dfe1e6" }}
+                onFocusCapture={(e) => { e.currentTarget.style.borderColor = "#4c9aff"; }}
+                onBlurCapture={(e) => { e.currentTarget.style.borderColor = "#dfe1e6"; }}
+              >
+                <Search size={12} style={{ color: "#97a0af" }} className="shrink-0" />
                 <input
                   type="text"
-                  placeholder="Find Project Type..."
-                  className="w-full bg-white border border-gray-200 rounded-md pl-8 pr-3 py-1.5 text-xs text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition placeholder:text-gray-400"
+                  placeholder="Find type..."
+                  className="flex-1 text-xs outline-none bg-transparent"
+                  style={{ color: "#172b4d" }}
                   value={searchProjectType}
                   onChange={(e) => setSearchProjectType(e.target.value)}
                 />
               </div>
-              <div className="space-y-0.5 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+
+              <div className="space-y-0.5 max-h-36 overflow-y-auto custom-scrollbar">
                 {filteredProjectTypes.length > 0 ? (
-                  filteredProjectTypes.map((type,index) => (
+                  filteredProjectTypes.map((type, index) => (
                     <ProjectTypesList
                       key={index}
                       type={type}
@@ -170,17 +146,8 @@ export const ProjectFilter = ({
                     />
                   ))
                 ) : (
-                  /* Yahan se 'hidden' hata diya aur padding badha di */
-                  <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <div className="bg-gray-50 p-2.5 rounded-full mb-2">
-                      <Search size={16} className="text-gray-300" />
-                    </div>
-                    <p className="text-[11px] font-medium text-gray-400">
-                      No Category found
-                    </p>
-                    <p className="text-[10px] text-gray-300">
-                      Try a different search
-                    </p>
+                  <div className="py-4 text-center">
+                    <p className="text-xs" style={{ color: "#97a0af" }}>No types found</p>
                   </div>
                 )}
               </div>
@@ -188,22 +155,24 @@ export const ProjectFilter = ({
           </div>
 
           {/* Footer */}
-          <div className="p-3 border-t border-gray-100 bg-gray-50/30 flex justify-between items-center">
-            <span className="text-xs text-gray-500">
-              {activeCount > 0
-                ? `${activeCount} filters active`
-                : "No filters active"}
+          <div
+            className="flex items-center justify-between px-4 py-2.5"
+            style={{ borderTop: "1px solid #dfe1e6", background: "#f4f5f7" }}
+          >
+            <span className="text-xs" style={{ color: "#97a0af" }}>
+              {activeCount > 0 ? `${activeCount} active` : "No filters"}
             </span>
             <button
               onClick={clearAllFilters}
               disabled={activeCount === 0}
-              className="text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ color: "#de350b" }}
             >
               Clear all
             </button>
           </div>
         </div>
-      )}
+      </DropdownPortal>
     </div>
   );
 };

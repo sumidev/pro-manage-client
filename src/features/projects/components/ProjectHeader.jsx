@@ -1,6 +1,117 @@
 import { PROJECT_TYPES } from "@/constants/projectConstants";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { ChevronDown, Check } from "lucide-react";
+import { DropdownPortal } from "@/components/ui/DropdownPortal";
 
+// ── Reusable badge-dropdown (portal-based, never clipped) ───────────────────
+const BadgeDropdown = ({ value, options, onChange, style }) => {
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef(null);
+  const current = options.find((o) => o.value === value) || options[0];
+
+  return (
+    <div className="relative">
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wide transition-all"
+        style={{
+          background: style.bg,
+          color: style.color,
+          border: `1px solid ${style.border || style.bg}`,
+        }}
+      >
+        {style.dot && (
+          <span
+            className="w-1.5 h-1.5 rounded-full shrink-0"
+            style={{ background: style.dot }}
+          />
+        )}
+        {current.label}
+        <ChevronDown
+          size={10}
+          className={`transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      <DropdownPortal
+        anchorRef={btnRef}
+        open={open}
+        onClose={() => setOpen(false)}
+        minWidth={150}
+      >
+        <div
+          className="rounded border py-1"
+          style={{
+            background: "var(--bg-card)",
+            borderColor: "var(--border)",
+            boxShadow: "var(--shadow-lg)",
+          }}
+        >
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => {
+                onChange(opt.value);
+                setOpen(false);
+              }}
+              className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium transition-all text-left"
+              style={{ color: "var(--text-primary)" }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "var(--bg-hover)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "";
+              }}
+            >
+              <div className="flex items-center gap-2">
+                {opt.dot && (
+                  <span
+                    className="w-2 h-2 rounded-full"
+                    style={{ background: opt.dot }}
+                  />
+                )}
+                <span className="capitalize">{opt.label}</span>
+              </div>
+              {value === opt.value && (
+                <Check size={12} style={{ color: "var(--accent)" }} />
+              )}
+            </button>
+          ))}
+        </div>
+      </DropdownPortal>
+    </div>
+  );
+};
+
+// ── Config ───────────────────────────────────────────────────────────────────
+const statusOptions = [
+  { value: "active", label: "Active", dot: "#22c55e" },
+  { value: "completed", label: "Completed", dot: "#6366f1" },
+  { value: "on_hold", label: "On Hold", dot: "#f97316" },
+];
+
+const statusStyle = {
+  active: {
+    bg: "var(--green-light)",
+    color: "var(--green-text)",
+    dot: "#22c55e",
+  },
+  completed: {
+    bg: "var(--accent-light)",
+    color: "var(--accent-text)",
+    dot: "#6366f1",
+  },
+  on_hold: {
+    bg: "var(--orange-light)",
+    color: "var(--orange-text)",
+    dot: "#f97316",
+  },
+};
+
+// ── ProjectHeader ────────────────────────────────────────────────────────────
 const ProjectHeader = ({ projectDetails, onUpdate }) => {
   const [localData, setLocalData] = useState({
     name: projectDetails.name,
@@ -9,6 +120,16 @@ const ProjectHeader = ({ projectDetails, onUpdate }) => {
     status: projectDetails.status,
   });
 
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height =
+        textareaRef.current.scrollHeight + "px";
+    }
+  }, [localData.description]);
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setLocalData((prev) => ({ ...prev, [name]: value }));
@@ -16,67 +137,62 @@ const ProjectHeader = ({ projectDetails, onUpdate }) => {
 
   const handleBlur = (e) => {
     const { name, value } = e.target;
-    if (value !== projectDetails[name]) {
-      onUpdate(name, value);
-    }
+    if (value !== projectDetails[name]) onUpdate(name, value);
   };
 
-  const handleSelectChange = (e) => {
-    const { name, value } = e.target;
-    setLocalData((prev) => ({ ...prev, [name]: value }));
-    onUpdate(name, value);
-  };
+  const typeOptions = PROJECT_TYPES.map((t) => ({
+    value: t,
+    label: t.replace("_", " "),
+  }));
+  const currentStatus = statusStyle[localData.status] || statusStyle.active;
 
   return (
     <div className="w-full">
-      {/* Badges as Dropdowns */}
-      <div className="flex items-center gap-3 mb-2">
-        <select
-          name="type"
+      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+        <BadgeDropdown
           value={localData.type}
-          onChange={handleSelectChange}
-          className="bg-blue-50 text-blue-700 text-xs font-bold px-2 py-0.5 rounded uppercase tracking-wide cursor-pointer border-none outline-none focus:ring-0 appearance-none text-center hover:bg-blue-100 transition-colors"
-        >
-        {PROJECT_TYPES.map((type,index) => {
-           return  <option key={index} value={type}>{type}</option>
-        })}
-        </select>
-
-        <div className="relative flex items-center">
-          <span className="absolute left-2 w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse pointer-events-none"></span>
-          <select
-            name="status"
-            value={localData.status}
-            onChange={handleSelectChange}
-            className="pl-5 pr-2 py-0.5 bg-green-50 text-green-700 text-xs font-bold rounded uppercase tracking-wide cursor-pointer border-none outline-none focus:ring-0 appearance-none text-left hover:bg-green-100 transition-colors"
-          >
-            <option value="active">Active</option>
-            <option value="completed">Completed</option>
-            <option value="on_hold">On Hold</option>
-          </select>
-        </div>
+          options={typeOptions}
+          onChange={(val) => {
+            setLocalData((p) => ({ ...p, type: val }));
+            onUpdate("type", val);
+          }}
+          style={{
+            bg: "var(--accent-light)",
+            color: "var(--accent-text)",
+            border: "rgba(99,102,241,0.2)",
+          }}
+        />
+        <BadgeDropdown
+          value={localData.status}
+          options={statusOptions}
+          onChange={(val) => {
+            setLocalData((p) => ({ ...p, status: val }));
+            onUpdate("status", val);
+          }}
+          style={currentStatus}
+        />
       </div>
 
-      {/* Title as Inline Input - Full Width, No Border */}
       <input
         type="text"
         name="name"
         value={localData.name}
         onChange={handleChange}
         onBlur={handleBlur}
-        className="w-full text-2xl font-bold text-gray-900 leading-tight bg-transparent border-none outline-none focus:ring-0 hover:bg-gray-50 rounded px-2 -ml-2 py-1 transition-colors"
-        placeholder="Project Title"
+        className="inline-edit w-full text-lg font-bold leading-tight"
+        style={{ color: "var(--text-primary)" }}
+        placeholder="Project name"
       />
 
-      {/* Description as Inline Textarea - Full Width, No Border */}
       <textarea
+        ref={textareaRef}
         name="description"
-        value={localData.description}
+        value={localData.description || ""}
         onChange={handleChange}
         onBlur={handleBlur}
-        rows={Math.max(3, localData.description?.split('\n').length || 3)}
-        className="w-full mt-1 text-gray-500 text-sm leading-relaxed bg-transparent border-none outline-none focus:ring-0 hover:bg-gray-50 rounded px-2 -ml-2 py-1 resize-none transition-colors"
-        placeholder="Add a project description..."
+        className="inline-edit w-full mt-0.5 text-sm leading-relaxed resize-none overflow-hidden"
+        style={{ color: "var(--text-secondary)" }}
+        placeholder="Add a description..."
       />
     </div>
   );

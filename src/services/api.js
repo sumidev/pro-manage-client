@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api",
   withCredentials: true,
   headers: {
     'Content-Type': 'application/json',
@@ -27,7 +27,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      store.dispatch(logout());
+      localStorage.removeItem("token");
+      import("@/app/store").then(({ store }) =>
+        import("@/features/auth/authSlice").then(({ logout }) => {
+          store.dispatch(logout());
+        }),
+      );
     }
     return Promise.reject(error);
   }

@@ -1,9 +1,26 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
+import {
+  AlertCircle,
+  CheckCircle2,
+  FolderKanban,
+  Loader2,
+  UserPlus,
+  X,
+} from "lucide-react";
 import { invitationService } from "@/services/invitationService";
 import { isAuthenticated } from "@/features/auth/authSlice";
 import api from "@/services/api";
+import InvitationSkeleton from "@/components/skeletons/InvitationSkeleton";
+import InvitationLayout from "@/components/layouts/InvitationLayout";
+import toast from "react-hot-toast";
+
+const inviterDisplayName = (inviter) => {
+  if (!inviter) return "A team member";
+  const name = `${inviter.first_name || ""} ${inviter.last_name || ""}`.trim();
+  return name || inviter.email || "A team member";
+};
 
 const AcceptInvitation = () => {
   const [searchParams] = useSearchParams();
@@ -11,15 +28,14 @@ const AcceptInvitation = () => {
   const auth = useSelector(isAuthenticated);
   const token = searchParams.get("token");
 
-  // States for handling the UI and data
   const [loading, setLoading] = useState(true);
   const [invitationData, setInvitationData] = useState(null);
   const [error, setError] = useState("");
-  const [processingAction, setProcessingAction] = useState(null); // 'accept' or 'reject'
+  const [processingAction, setProcessingAction] = useState(null);
 
   useEffect(() => {
     if (!token) {
-      navigate("/");
+      navigate("/", { replace: true });
       return;
     }
 
@@ -42,14 +58,19 @@ const AcceptInvitation = () => {
 
   const handleAction = async (action) => {
     setProcessingAction(action);
+    setError("");
 
     if (action === "reject") {
+      if (!auth) {
+        navigate("/login", { replace: true });
+        return;
+      }
       try {
         await api.post(`/invitations/${token}/respond`, { action: "reject" });
-        navigate("/", { replace: true });
+        toast.success("Invitation declined.");
+        navigate("/dashboard", { replace: true });
       } catch (err) {
-        console.error(err);
-        setError("Failed to reject invitation.");
+        setError(err.response?.data?.message || "Failed to decline invitation.");
         setProcessingAction(null);
       }
       return;
@@ -58,10 +79,11 @@ const AcceptInvitation = () => {
     if (action === "accept") {
       if (auth) {
         try {
-          await api.post(`/invitations/${token}/respond`, { action: "accept" });
-          navigate("/dashboard", { replace: true });
+          const res = await api.post(`/invitations/${token}/respond`, { action: "accept" });
+          toast.success(res.data?.message || "You joined the project!");
+          const projectId = invitationData?.project?.id || invitationData?.project_id;
+          navigate(projectId ? `/projects/${projectId}` : "/dashboard", { replace: true });
         } catch (err) {
-          console.error(err);
           setError(
             err.response?.data?.message || "Failed to accept the invitation.",
           );
@@ -71,7 +93,7 @@ const AcceptInvitation = () => {
         invitationService.saveToken(token);
         navigate("/register", {
           state: {
-            message: "Please create an account or log in to join the project.",
+            message: "Create an account or log in to join the project.",
           },
           replace: true,
         });
@@ -81,108 +103,144 @@ const AcceptInvitation = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-        <div className="flex flex-col items-center">
-          <svg
-            className="animate-spin h-10 w-10 text-indigo-600 mb-4"
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-          >
-            <circle
-              className="opacity-25"
-              cx="12"
-              cy="12"
-              r="10"
-              stroke="currentColor"
-              strokeWidth="4"
-            ></circle>
-            <path
-              className="opacity-75"
-              fill="currentColor"
-              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-            ></path>
-          </svg>
-          <p className="text-sm font-medium text-gray-500 animate-pulse">
-            Loading invitation details...
-          </p>
-        </div>
-      </div>
+      <InvitationLayout>
+        <InvitationSkeleton embedded />
+      </InvitationLayout>
     );
   }
 
-  if (error) {
+  if (error && !invitationData) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-        <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg border border-red-100 text-center">
-          <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
-            ⚠️
-          </div>
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Oops!</h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <button
-            onClick={() => navigate("/")}
-            className="px-6 py-2 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800 transition"
+      <InvitationLayout>
+        <div className="text-center">
+          <div
+            className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
+            style={{ background: "var(--red-light)" }}
           >
-            Go to Home
-          </button>
+            <AlertCircle size={22} style={{ color: "var(--red-text)" }} />
+          </div>
+          <h2 className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>
+            Invalid invitation
+          </h2>
+          <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
+            {error}
+          </p>
+          <Link
+            to="/login"
+            className="inline-flex items-center justify-center w-full py-2 px-4 rounded text-sm font-semibold text-white"
+            style={{ background: "var(--accent)" }}
+          >
+            Go to login
+          </Link>
         </div>
-      </div>
+      </InvitationLayout>
     );
   }
+
+  const project = invitationData?.project;
+  const projectInitial = (project?.name?.charAt(0) || "P").toUpperCase();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl border border-gray-100">
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-indigo-100 text-indigo-700 font-bold text-2xl rounded-xl flex items-center justify-center mx-auto mb-4 shadow-sm border border-indigo-200">
-            {invitationData.project?.name?.charAt(0) || "P"}
+    <InvitationLayout>
+      <div className="text-center mb-6">
+        <div
+          className="w-14 h-14 rounded-lg flex items-center justify-center mx-auto mb-4 text-xl font-bold"
+          style={{ background: "var(--accent-light)", color: "var(--accent-text)", border: "1px solid #c7d2fe" }}
+        >
+          {projectInitial}
+        </div>
+        <h2 className="text-xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>
+          Project invitation
+        </h2>
+        <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+          <strong style={{ color: "var(--text-primary)" }}>
+            {inviterDisplayName(invitationData?.inviter)}
+          </strong>{" "}
+          invited you to collaborate
+        </p>
+      </div>
+
+      {error && (
+        <div
+          className="flex items-start gap-2.5 px-3 py-2.5 rounded mb-4 text-sm"
+          style={{ background: "var(--red-light)", border: "1px solid #fca5a5", color: "var(--red-text)" }}
+        >
+          <AlertCircle size={15} className="shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      <div
+        className="rounded-lg p-4 mb-6"
+        style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}
+      >
+        <p className="text-[10px] font-bold uppercase tracking-wider mb-2" style={{ color: "var(--text-muted)" }}>
+          Project details
+        </p>
+        <div className="flex items-start gap-3">
+          <div
+            className="w-9 h-9 rounded flex items-center justify-center shrink-0"
+            style={{ background: "var(--accent-light)", color: "var(--accent)" }}
+          >
+            <FolderKanban size={16} />
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-1">
-            Project Invitation
-          </h2>
-          <p className="text-gray-600 text-sm">
-            <span className="font-semibold text-gray-800">
-              {invitationData.inviter?.name}
-            </span>{" "}
-            has invited you to collaborate.
-          </p>
-        </div>
-
-        <div className="bg-gray-50 rounded-xl p-4 mb-8 border border-gray-100">
-          <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">
-            Project Details
-          </h3>
-          <p className="text-lg font-semibold text-gray-800 mb-1">
-            {invitationData.project?.name}
-          </p>
-          <p className="text-sm text-gray-600 leading-relaxed">
-            {invitationData.project?.description ||
-              "No description provided for this project."}
-          </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-3">
-          <button
-            onClick={() => handleAction("accept")}
-            disabled={processingAction !== null}
-            className="flex-1 bg-indigo-600 text-white font-medium py-2.5 px-4 rounded-lg hover:bg-indigo-700 transition disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-indigo-500/20"
-          >
-            {processingAction === "accept"
-              ? "Accepting..."
-              : "Accept Invitation"}
-          </button>
-
-          <button
-            onClick={() => handleAction("reject")}
-            disabled={processingAction !== null}
-            className="flex-1 bg-white border-2 border-gray-200 text-gray-700 font-medium py-2.5 px-4 rounded-lg hover:bg-gray-50 hover:border-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {processingAction === "reject" ? "Declining..." : "Decline"}
-          </button>
+          <div className="min-w-0 text-left">
+            <p className="text-base font-semibold mb-1" style={{ color: "var(--text-primary)" }}>
+              {project?.name || "Untitled project"}
+            </p>
+            <p className="text-sm leading-relaxed" style={{ color: "var(--text-secondary)" }}>
+              {project?.description || "No description provided for this project."}
+            </p>
+          </div>
         </div>
       </div>
-    </div>
+
+      {!auth && (
+        <p
+          className="flex items-center gap-2 text-xs mb-4 px-3 py-2 rounded"
+          style={{ background: "var(--accent-light)", color: "var(--accent-text)" }}
+        >
+          <UserPlus size={14} className="shrink-0" />
+          Sign in or register to accept this invitation.
+        </p>
+      )}
+
+      <div className="flex flex-col sm:flex-row gap-3">
+        <button
+          type="button"
+          onClick={() => handleAction("accept")}
+          disabled={processingAction !== null}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded text-sm font-semibold text-white transition-all disabled:opacity-70"
+          style={{ background: "var(--accent)" }}
+        >
+          {processingAction === "accept" ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <CheckCircle2 size={15} />
+          )}
+          {processingAction === "accept" ? "Accepting…" : "Accept invitation"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => handleAction("reject")}
+          disabled={processingAction !== null}
+          className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded text-sm font-semibold transition-all disabled:opacity-70"
+          style={{
+            background: "var(--bg-card)",
+            border: "1.5px solid var(--border)",
+            color: "var(--text-secondary)",
+          }}
+        >
+          {processingAction === "reject" ? (
+            <Loader2 size={15} className="animate-spin" />
+          ) : (
+            <X size={15} />
+          )}
+          {processingAction === "reject" ? "Declining…" : "Decline"}
+        </button>
+      </div>
+    </InvitationLayout>
   );
 };
 

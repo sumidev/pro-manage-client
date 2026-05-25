@@ -1,80 +1,170 @@
-import React, { useState } from "react";
-import { X, Calendar, User, AlignLeft, Flag, CheckSquare } from "lucide-react";
+import React, { useState, useRef, useEffect } from "react";
+import { X, Plus, ChevronDown, Check, Flag, User, Calendar, Layers } from "lucide-react";
+import { DropdownPortal } from "@/components/ui/DropdownPortal";
+import InviteMemberButton from "@/components/ui/InviteMemberButton";
+import { getMemberFullName, getMemberInitials } from "@/utils/memberUtils";
 
-const CreateTaskModal = ({ isOpen, onClose, onSubmit, members = [] }) => {
+// ── Custom Select (portal-based) ─────────────────────────────────────────────
+const CustomSelect = ({ value, options, onChange, placeholder = "Select..." }) => {
+  const [open, setOpen] = useState(false);
+  const btnRef = useRef(null);
+  const current = options.find((o) => o.value === value);
 
+  return (
+    <div>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-3 py-2 rounded text-sm transition-all"
+        style={{
+          background: "var(--bg-subtle)",
+          border: open ? "1.5px solid var(--border-focus)" : "1.5px solid var(--border)",
+          color: current ? "var(--text-primary)" : "var(--text-muted)",
+          boxShadow: open ? "0 0 0 2px rgba(56,139,255,0.18)" : "none",
+        }}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          {current?.dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: current.dot }} />}
+          {current?.avatar && (
+            <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ background: current.avatarColor || "var(--accent)" }}>
+              {current.avatar}
+            </div>
+          )}
+          <span className="truncate">{current?.label || placeholder}</span>
+        </div>
+        <ChevronDown size={13} className={`transition-transform shrink-0 ml-1 ${open ? "rotate-180" : ""}`} style={{ color: "var(--text-muted)" }} />
+      </button>
+
+      <DropdownPortal anchorRef={btnRef} open={open} onClose={() => setOpen(false)}>
+        <div
+          className="rounded border py-1"
+          style={{ background: "var(--bg-card)", borderColor: "var(--border)", boxShadow: "var(--shadow-lg)" }}
+        >
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => { onChange(opt.value); setOpen(false); }}
+              className="w-full flex items-center justify-between px-3 py-2 text-sm transition-all text-left"
+              style={{
+                background: value === opt.value ? "var(--accent-light)" : "transparent",
+                color: value === opt.value ? "var(--accent-text)" : "var(--text-primary)",
+              }}
+              onMouseEnter={(e) => { if (value !== opt.value) e.currentTarget.style.background = "var(--bg-hover)"; }}
+              onMouseLeave={(e) => { if (value !== opt.value) e.currentTarget.style.background = "transparent"; }}
+            >
+              <div className="flex items-center gap-2 min-w-0">
+                {opt.dot && <span className="w-2 h-2 rounded-full shrink-0" style={{ background: opt.dot }} />}
+                {opt.avatar && (
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ background: opt.avatarColor || "var(--accent)" }}>
+                    {opt.avatar}
+                  </div>
+                )}
+                <span className="truncate">{opt.label}</span>
+              </div>
+              {value === opt.value && <Check size={12} style={{ color: "var(--accent)" }} />}
+            </button>
+          ))}
+        </div>
+      </DropdownPortal>
+    </div>
+  );
+};
+
+// ── Options ──────────────────────────────────────────────────────────────────
+const priorityOptions = [
+  { value: "low",      label: "Low",      dot: "#22c55e" },
+  { value: "medium",   label: "Medium",   dot: "#eab308" },
+  { value: "high",     label: "High",     dot: "#f97316" },
+  { value: "critical", label: "Critical", dot: "#ef4444" },
+];
+
+const stageOptions = [
+  { value: "todo",    label: "To Do"   },
+  { value: "backlog", label: "Backlog" },
+];
+
+const avatarColors = ["#6366f1","#8b5cf6","#06b6d4","#10b981","#f59e0b","#ef4444","#ec4899"];
+const getAvatarColor = (id) => avatarColors[(id || 0) % avatarColors.length];
+
+// ── Modal ────────────────────────────────────────────────────────────────────
+const CreateTaskModal = ({ isOpen, onClose, onSubmit, members = [], projectId }) => {
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-    priority: "medium", 
-    due_date: "",
-    assigned_to: "",
-    stage: "todo",
+    name: "", description: "", priority: "medium",
+    due_date: "", assigned_to: "", stage: "todo",
   });
 
   if (!isOpen) return null;
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Validations yahan laga sakte ho
     if (!formData.name.trim()) return;
-
-    onSubmit(formData); // Parent ko data bhejo
-    onClose(); // Modal band karo
-
-    // Form Reset
-    setFormData({
-      name: "",
-      description: "",
-      priority: "medium",
-      due_date: "",
-      assigned_to: "",
-      stage: "todo",
-    });
+    onSubmit(formData);
+    onClose();
+    setFormData({ name: "", description: "", priority: "medium", due_date: "", assigned_to: "", stage: "todo" });
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
-      {/* 1. BACKDROP (Dark Overlay) */}
-      <div
-        className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity"
-        onClick={onClose}
-      ></div>
+  const assigneeOptions = [
+    { value: "", label: "Unassigned" },
+    ...members.map((m) => ({
+      value: String(m.id),
+      label: getMemberFullName(m),
+      avatar: getMemberInitials(m),
+      avatarColor: getAvatarColor(m.id),
+    })),
+  ];
+  const hasMembers = members.length > 0;
 
-      {/* 2. MODAL CONTENT */}
-      <div className="relative bg-white w-full max-w-lg rounded-xl shadow-2xl transform transition-all scale-100 p-6 mx-4">
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      style={{ background: "rgba(9,30,66,0.54)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-[520px] rounded-lg overflow-hidden fade-in"
+        style={{ background: "var(--bg-card)", border: "1px solid var(--border)", boxShadow: "var(--shadow-xl)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
-        <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-            <CheckSquare className="text-blue-600" size={24} />
-            Create New Task
-          </h2>
+        <div
+          className="flex items-center justify-between px-5 py-3.5"
+          style={{ borderBottom: "1px solid var(--border)" }}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: "var(--accent-light)" }}>
+              <Plus size={14} style={{ color: "var(--accent)" }} />
+            </div>
+            <h2 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>Create issue</h2>
+          </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full transition"
+            className="p-1.5 rounded transition-all"
+            style={{ color: "var(--text-muted)" }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; e.currentTarget.style.color = "var(--text-primary)"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = ""; e.currentTarget.style.color = "var(--text-muted)"; }}
           >
-            <X size={20} />
+            <X size={15} />
           </button>
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Task Name */}
+        <form onSubmit={handleSubmit} className="px-5 py-4 space-y-4">
+          {/* Summary */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-              Task Name
+            <label className="pm-label block mb-1.5">
+              Summary <span style={{ color: "var(--red)" }}>*</span>
             </label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="e.g. Fix Navigation Bug"
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+              placeholder="What needs to be done?"
+              className="pm-input"
               autoFocus
               required
             />
@@ -82,104 +172,101 @@ const CreateTaskModal = ({ isOpen, onClose, onSubmit, members = [] }) => {
 
           {/* Description */}
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1 flex items-center gap-1">
-              <AlignLeft size={14} /> Description
-            </label>
+            <label className="pm-label block mb-1.5">Description</label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
-              rows="3"
-              placeholder="Add details about this task..."
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition resize-none"
-            ></textarea>
+              rows={3}
+              placeholder="Add more details..."
+              className="pm-input resize-none"
+            />
           </div>
 
-          {/* Row: Priority & Due Date */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* 2x2 grid */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1 flex items-center gap-1">
-                <Flag size={14} /> Priority
+              <label className="pm-label flex items-center gap-1 mb-1.5">
+                <Flag size={10} /> Priority
               </label>
-              <select
-                name="priority"
+              <CustomSelect
                 value={formData.priority}
-                onChange={handleChange}
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
+                options={priorityOptions}
+                onChange={(val) => setFormData({ ...formData, priority: val })}
+              />
             </div>
+
             <div>
-              <label className="block text-xs font-bold text-gray-500 uppercase mb-1 flex items-center gap-1">
-                <Calendar size={14} /> Due Date
+              <label className="pm-label flex items-center gap-1 mb-1.5">
+                <Calendar size={10} /> Due date
               </label>
               <input
                 type="date"
                 name="due_date"
                 value={formData.due_date}
                 onChange={handleChange}
-                className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                className="pm-input"
               />
+            </div>
+
+            <div>
+              <label className="pm-label flex items-center gap-1 mb-1.5">
+                <Layers size={10} /> Status
+              </label>
+              <CustomSelect
+                value={formData.stage}
+                options={stageOptions}
+                onChange={(val) => setFormData({ ...formData, stage: val })}
+              />
+            </div>
+
+            <div>
+              <label className="pm-label flex items-center gap-1 mb-1.5">
+                <User size={10} /> Assignee
+              </label>
+              {hasMembers ? (
+                <CustomSelect
+                  value={formData.assigned_to}
+                  options={assigneeOptions}
+                  onChange={(val) => setFormData({ ...formData, assigned_to: val })}
+                  placeholder="Unassigned"
+                />
+              ) : (
+                <div
+                  className="rounded-lg p-3 space-y-2"
+                  style={{ background: "var(--bg-subtle)", border: "1px solid var(--border)" }}
+                >
+                  <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                    No team members yet. Invite someone to assign this issue.
+                  </p>
+                  {projectId && (
+                    <InviteMemberButton projectId={projectId} label="Invite team member" className="w-full" />
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Assignee */}
-          <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1 flex items-center gap-1">
-              <User size={14} /> Status
-            </label>
-            <select
-              name="status"
-              value={formData.stage}
-              onChange={handleChange}
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
-            >
-              <option value="todo">Todo</option>
-              <option value="backlog">BackLog</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1 flex items-center gap-1">
-              <User size={14} /> Assign to
-            </label>
-            <select
-              name="assigned_to"
-              value={formData.assigned_to}
-              onChange={handleChange}
-              className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm bg-white focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
-            >
-              <option value="">Unassigned</option>
-              {/* Yahan members map honge */}
-              {members.map((user) => (
-                <option key={user.id} value={user.id}>
-                  {user.firstName} {user.lastName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-          </div>
-          </div>
-
-          {/* Footer Buttons */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 mt-6">
+          {/* Footer */}
+          <div className="flex justify-end gap-2 pt-2" style={{ borderTop: "1px solid var(--border)" }}>
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition"
+              className="px-4 py-2 rounded text-sm font-medium transition-all"
+              style={{ background: "var(--bg-hover)", color: "var(--text-primary)", border: "1px solid var(--border)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-active)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; }}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-lg shadow-blue-200 transition transform active:scale-95"
+              className="px-4 py-2 rounded text-sm font-semibold text-white transition-all"
+              style={{ background: "var(--accent)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--accent-hover)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent)"; }}
             >
-              Create Task
+              Create issue
             </button>
           </div>
         </form>

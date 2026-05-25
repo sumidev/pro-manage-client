@@ -1,22 +1,9 @@
-import React, { useMemo, useState } from "react";
-import {
-  Filter,
-  X,
-  Check,
-  Search,
-  Calendar,
-  AlertCircle,
-  Clock,
-  CalendarDays,
-  CircleDashed,
-} from "lucide-react";
+import React, { useMemo, useRef, useState } from "react";
+import { Filter, X, Check, Search, Calendar } from "lucide-react";
 import { getUserColor } from "../../../utils/helpers";
-import {
-  dueDates,
-  priorities,
-  unAssignedMember,
-} from "../../../constants/filterConstants";
+import { dueDates, priorities, unAssignedMember } from "../../../constants/filterConstants";
 import { MembersList } from "./filterComponents/MembersList";
+import { DropdownPortal } from "@/components/ui/DropdownPortal";
 
 export const TaskFilters = ({
   members,
@@ -26,13 +13,14 @@ export const TaskFilters = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchMember, setSearchMember] = useState("");
+  const btnRef = useRef(null);
 
   const allMembers = [unAssignedMember, ...members];
 
   const filteredMembers = useMemo(() => {
     if (!searchMember) return allMembers;
-    return allMembers.filter((member) =>
-      member.firstName.toLowerCase().includes(searchMember.toLowerCase()),
+    return allMembers.filter((m) =>
+      m.firstName?.toLowerCase().includes(searchMember.toLowerCase())
     );
   }, [searchMember, allMembers]);
 
@@ -43,75 +31,73 @@ export const TaskFilters = ({
     (filters.search ? 1 : 0);
 
   return (
-    <div className="relative">
-      {/* FILTER BUTTON */}
+    <div>
+      {/* Filter button */}
       <button
+        ref={btnRef}
         onClick={() => setIsOpen(!isOpen)}
-        className={`flex items-center gap-2 border px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm ${
-          isOpen || activeCount > 0
-            ? "bg-blue-50 border-blue-200 text-blue-700"
-            : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900"
-        }`}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded border text-sm font-medium transition-all"
+        style={{
+          background: isOpen || activeCount > 0 ? "var(--accent-light)" : "var(--bg-card)",
+          borderColor: isOpen || activeCount > 0 ? "var(--accent)" : "var(--border)",
+          color: isOpen || activeCount > 0 ? "var(--accent-text)" : "var(--text-secondary)",
+        }}
       >
-        <Filter size={16} />
+        <Filter size={13} />
         Filter
         {activeCount > 0 && (
-          <span className="ml-1 bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+          <span
+            className="text-[10px] font-bold px-1.5 py-0.5 rounded-full text-white"
+            style={{ background: "var(--accent)" }}
+          >
             {activeCount}
           </span>
         )}
       </button>
 
-      {/* BACKDROP */}
-      {isOpen && (
+      <DropdownPortal anchorRef={btnRef} open={isOpen} onClose={() => setIsOpen(false)} align="right" minWidth={288}>
         <div
-          className="fixed inset-0 z-30"
-          onClick={() => setIsOpen(false)}
-        ></div>
-      )}
-
-      {/* DROPDOWN MENU */}
-      {isOpen && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right overflow-hidden">
+          className="rounded border overflow-hidden"
+          style={{ background: "var(--bg-card)", borderColor: "var(--border)", boxShadow: "var(--shadow-lg)" }}
+        >
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-              Filters
-            </h3>
+          <div
+            className="flex items-center justify-between px-4 py-2.5"
+            style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-subtle)" }}
+          >
+            <span className="pm-label">Filter issues</span>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-gray-400 hover:text-gray-600 p-1 rounded hover:bg-gray-200 transition"
+              className="p-1 rounded transition-all"
+              style={{ color: "var(--text-muted)" }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = ""; }}
             >
-              <X size={14} />
+              <X size={13} />
             </button>
           </div>
 
-          {/* Body */}
-          <div className="p-4 space-y-6 max-h-[400px] overflow-y-auto custom-scrollbar">
-            {/* 2. ✨ NEW: Due Date Grid */}
+          <div className="p-4 space-y-5 max-h-[360px] overflow-y-auto custom-scrollbar">
+            {/* Due Date */}
             <div>
-              <h4 className="text-xs font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                <Calendar size={12} className="text-gray-400" /> Due Date
+              <h4 className="pm-label flex items-center gap-1.5 mb-2">
+                <Calendar size={11} /> Due date
               </h4>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-1.5">
                 {dueDates.map((item) => {
                   const isActive = filters.dueDate === item.value;
                   return (
                     <button
                       key={item.value}
                       onClick={() => handleFilterChange("dueDate", item.value)}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-xs font-medium transition-all
-                         ${
-                           isActive
-                             ? `bg-blue-50 border-blue-500 ring-1 ring-blue-500 text-blue-700` // Active State
-                             : `${item.color.replace("bg-", "hover:bg-")} border-gray-100 bg-white text-gray-600 hover:border-gray-300` // Normal State
-                         }
-                       `}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-xs font-medium transition-all"
+                      style={{
+                        background: isActive ? "var(--accent-light)" : "var(--bg-card)",
+                        borderColor: isActive ? "var(--accent)" : "var(--border)",
+                        color: isActive ? "var(--accent-text)" : "var(--text-secondary)",
+                      }}
                     >
-                      <item.icon
-                        size={14}
-                        className={isActive ? "text-blue-500" : "opacity-70"}
-                      />
+                      <item.icon size={12} />
                       {item.label}
                     </button>
                   );
@@ -119,25 +105,24 @@ export const TaskFilters = ({
               </div>
             </div>
 
+            {/* Priority */}
             <div>
-              <h4 className="text-xs font-semibold text-gray-900 mb-3">
-                Priority
-              </h4>
-              <div className="flex flex-wrap gap-2">
+              <h4 className="pm-label mb-2">Priority</h4>
+              <div className="flex flex-wrap gap-1.5">
                 {priorities.map((p) => {
                   const isSelected = filters.priorities.includes(p.label);
                   return (
                     <button
                       key={p.label}
                       onClick={() => handleFilterChange("priorities", p.label)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 
-                        ${
-                          isSelected
-                            ? "bg-gray-800 text-white border-gray-800 shadow-sm"
-                            : `${p.color} border-transparent`
-                        }`}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all"
+                      style={{
+                        background: isSelected ? "var(--text-primary)" : "var(--bg-hover)",
+                        borderColor: isSelected ? "var(--text-primary)" : "var(--border)",
+                        color: isSelected ? "#fff" : "var(--text-secondary)",
+                      }}
                     >
-                      {isSelected && <Check size={12} />}
+                      {isSelected && <Check size={10} />}
                       {p.label}
                     </button>
                   );
@@ -145,73 +130,63 @@ export const TaskFilters = ({
               </div>
             </div>
 
+            {/* Assignees */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-semibold text-gray-900">
-                  Assignees
-                </h4>
-                <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">
+                <h4 className="pm-label">Assignee</h4>
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: "var(--bg-hover)", color: "var(--text-muted)" }}>
                   {filteredMembers.length}
                 </span>
               </div>
-              <div className="relative mb-2">
-                <Search
-                  className="absolute left-2.5 top-2 text-gray-400 pointer-events-none"
-                  size={13}
-                />
+              <div
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded border mb-2"
+                style={{ background: "var(--bg-subtle)", borderColor: "var(--border)" }}
+                onFocusCapture={(e) => { e.currentTarget.style.borderColor = "var(--border-focus)"; }}
+                onBlurCapture={(e) => { e.currentTarget.style.borderColor = "var(--border)"; }}
+              >
+                <Search size={12} style={{ color: "var(--text-muted)" }} className="shrink-0" />
                 <input
                   type="text"
                   placeholder="Find member..."
-                  className="w-full bg-white border border-gray-200 rounded-md pl-8 pr-3 py-1.5 text-xs text-gray-700 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition placeholder:text-gray-400"
+                  className="flex-1 text-xs outline-none bg-transparent"
+                  style={{ color: "var(--text-primary)" }}
                   value={searchMember}
                   onChange={(e) => setSearchMember(e.target.value)}
                 />
               </div>
-              <div className="space-y-0.5 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+              <div className="space-y-0.5 max-h-36 overflow-y-auto custom-scrollbar">
                 {filteredMembers.length > 0 ? (
                   filteredMembers.map((member) => (
-                    <MembersList
-                      key={member.id}
-                      member={member}
-                      filters={filters}
-                      handleFilterChange={handleFilterChange}
-                    />
+                    <MembersList key={member.id} member={member} filters={filters} handleFilterChange={handleFilterChange} />
                   ))
                 ) : (
-                  /* Yahan se 'hidden' hata diya aur padding badha di */
-                  <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <div className="bg-gray-50 p-2.5 rounded-full mb-2">
-                      <Search size={16} className="text-gray-300" />
-                    </div>
-                    <p className="text-[11px] font-medium text-gray-400">
-                      No members found
-                    </p>
-                    <p className="text-[10px] text-gray-300">
-                      Try a different search
-                    </p>
-                  </div>
+                  <div className="py-4 text-center text-xs" style={{ color: "var(--text-muted)" }}>No members found</div>
                 )}
               </div>
             </div>
           </div>
 
           {/* Footer */}
-          <div className="p-3 border-t border-gray-100 bg-gray-50/30 flex justify-between items-center">
-            <span className="text-xs text-gray-500">
-              {activeCount > 0
-                ? `${activeCount} filters active`
-                : "No filters active"}
+          <div
+            className="flex items-center justify-between px-4 py-2.5"
+            style={{ borderTop: "1px solid var(--border)", background: "var(--bg-subtle)" }}
+          >
+            <span className="text-xs" style={{ color: "var(--text-muted)" }}>
+              {activeCount > 0 ? `${activeCount} active` : "No filters"}
             </span>
             <button
               onClick={clearAllFilters}
               disabled={activeCount === 0}
-              className="text-xs font-medium text-red-600 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ color: "var(--red-text)" }}
             >
               Clear all
             </button>
           </div>
         </div>
-      )}
+      </DropdownPortal>
     </div>
   );
 };
+
+

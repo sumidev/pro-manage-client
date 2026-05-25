@@ -1,34 +1,38 @@
 import { useState } from "react";
-import { useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { Eye, EyeOff, AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Loader2 } from "lucide-react";
 
-export const LoginForm = ({ onSubmit }) => {
-  const [email, setEmail] = useState("");
+export const ResetPasswordForm = ({ email, token, onSubmit, error }) => {
   const [password, setPassword] = useState("");
+  const [passwordConfirmation, setPasswordConfirmation] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Only read error from global state, not loading (to avoid initial loading:true issue)
-  const { error } = useSelector((state) => state.auth);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (password !== passwordConfirmation) return;
     setSubmitting(true);
     try {
-      await onSubmit({ email, password });
+      await onSubmit({
+        token,
+        email,
+        password,
+        password_confirmation: passwordConfirmation,
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
+  const mismatch = passwordConfirmation && password !== passwordConfirmation;
+
   return (
     <div>
       <h2 className="text-xl font-bold mb-1" style={{ color: "var(--text-primary)" }}>
-        Log in to ProManage
+        Set new password
       </h2>
       <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
-        Enter your credentials to continue
+        Choose a strong password for <strong>{email}</strong>
       </p>
 
       {error && (
@@ -44,33 +48,14 @@ export const LoginForm = ({ onSubmit }) => {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-primary)" }}>
-            Email address
+            New password
           </label>
-          <input
-            type="email"
-            required
-            placeholder="you@example.com"
-            className="pm-input"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={submitting}
-          />
-        </div>
-
-        <div>
-          <div className="flex items-center justify-between mb-1.5">
-            <label className="text-xs font-semibold" style={{ color: "var(--text-primary)" }}>
-              Password
-            </label>
-            <Link to="/forgot-password" className="text-xs font-medium" style={{ color: "var(--accent)" }}>
-              Forgot password?
-            </Link>
-          </div>
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
               required
-              placeholder="Enter your password"
+              minLength={8}
+              placeholder="At least 8 characters"
               className="pm-input pr-10"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -87,23 +72,41 @@ export const LoginForm = ({ onSubmit }) => {
           </div>
         </div>
 
+        <div>
+          <label className="block text-xs font-semibold mb-1.5" style={{ color: "var(--text-primary)" }}>
+            Confirm password
+          </label>
+          <input
+            type={showPassword ? "text" : "password"}
+            required
+            minLength={8}
+            placeholder="Repeat password"
+            className="pm-input"
+            value={passwordConfirmation}
+            onChange={(e) => setPasswordConfirmation(e.target.value)}
+            disabled={submitting}
+          />
+          {mismatch && (
+            <p className="text-xs mt-1" style={{ color: "var(--red-text)" }}>
+              Passwords do not match
+            </p>
+          )}
+        </div>
+
         <button
           type="submit"
-          disabled={submitting}
-          className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded text-sm font-semibold text-white transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+          disabled={submitting || mismatch}
+          className="w-full flex items-center justify-center gap-2 py-2 px-4 rounded text-sm font-semibold text-white transition-all disabled:opacity-70"
           style={{ background: "var(--accent)" }}
-          onMouseEnter={(e) => { if (!submitting) e.currentTarget.style.background = "var(--accent-hover)"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = "var(--accent)"; }}
         >
           {submitting && <Loader2 size={15} className="animate-spin" />}
-          {submitting ? "Logging in..." : "Log in"}
+          {submitting ? "Resetting..." : "Reset password"}
         </button>
       </form>
 
-      <div className="mt-5 pt-4 text-center text-sm" style={{ borderTop: "1px solid var(--border)" }}>
-        <span style={{ color: "var(--text-secondary)" }}>Don't have an account? </span>
-        <Link to="/register" className="font-semibold" style={{ color: "var(--accent)" }}>
-          Sign up for free
+      <div className="mt-5 pt-4 text-center text-sm">
+        <Link to="/login" className="font-semibold" style={{ color: "var(--accent)" }}>
+          Back to login
         </Link>
       </div>
     </div>

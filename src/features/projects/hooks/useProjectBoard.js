@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import toast from "react-hot-toast";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
@@ -14,23 +14,28 @@ import echo from "@/utils/echo";
 
 export const useProjectBoard = () => {
   const { id } = useParams();
+  const dispatch = useDispatch();
 
-  const { project, loading } = useSelector((state) => state.projects);
+  const { project, loading, projectLoading, error } = useSelector(
+    (state) => state.projects,
+  );
 
-  const projectDetails = project.project;
+  // Relaxed project check to handle arrays or missing id wrapper
+  let projectObj = project;
+  if (Array.isArray(project) && project.length > 0) {
+    projectObj = project[0];
+  }
+
+  const projectDetails = projectObj && (projectObj.id || projectObj._id) ? projectObj : null;
 
   const projectId = id;
-
-  const tasks = project.tasks;
+  const tasks = projectDetails?.tasks ?? null;
 
   const { filters, handleFilterChange, filteredTasks, clearAllFilters } =
     useTaskFilters(tasks);
 
-  const dispatch = useDispatch();
-
   const allTasks = useMemo(() => {
     if (!tasks) return [];
-
     return Object.keys(tasks).flatMap((stage) =>
       tasks[stage].map((t) => ({ ...t, stageName: stage })),
     );
@@ -43,9 +48,9 @@ export const useProjectBoard = () => {
       if (
         source.droppableId === destination.droppableId &&
         source.index === destination.index
-      ) {
+      )
         return;
-      }
+
       dispatch(
         moveTaskOptimistically({
           taskId: draggableId,
@@ -63,9 +68,7 @@ export const useProjectBoard = () => {
         }),
       )
         .unwrap()
-        .catch((err) => {
-          toast.error("Failed to move task");
-        });
+        .catch(() => toast.error("Failed to move task"));
     },
     [dispatch],
   );
@@ -73,26 +76,25 @@ export const useProjectBoard = () => {
   const handleCreateTask = async (data) => {
     const payload = { ...data, projectId: projectDetails.id };
     await toast.promise(dispatch(createTask(payload)).unwrap(), {
-      loading: "Creating Task...",
-      success: "Task Created!",
+      loading: "Creating issue...",
+      success: "Issue created!",
       error: (err) => `Error: ${err}`,
     });
   };
 
+  // Fetch project on mount, clear on unmount
   useEffect(() => {
     dispatch(fetchProjectById(id));
-
     return () => {
       dispatch(clearProjectDetails());
     };
   }, [id, dispatch]);
 
+  // Real-time task movement via Echo
   useEffect(() => {
     const channel = echo
       .private(`project.${projectId}`)
       .listen(".task.moved", (data) => {
-        console.log("Task moved by another user:", data);
-        // // 🚨 Yahan Redux dispatch kar ke state update kar do
         dispatch(syncTaskMovement(data.task));
       });
 
@@ -108,6 +110,8 @@ export const useProjectBoard = () => {
     filters,
     handleFilterChange,
     loading,
+    projectLoading,
+    error,
     handleDragEnd,
     handleCreateTask,
     clearAllFilters,
