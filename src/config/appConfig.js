@@ -22,11 +22,9 @@ export const STORAGE_BASE_URL = trimSlash(
   import.meta.env.VITE_STORAGE_URL || `${BACKEND_ORIGIN}/storage`,
 );
 
-export const REVERB = {
-  key: import.meta.env.VITE_REVERB_APP_KEY || "",
-  host: import.meta.env.VITE_REVERB_HOST || "localhost",
-  port: Number(import.meta.env.VITE_REVERB_PORT) || 8080,
-  scheme: import.meta.env.VITE_REVERB_SCHEME || "http",
+export const PUSHER = {
+  key: import.meta.env.VITE_PUSHER_APP_KEY || "",
+  cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER || "mt1",
 };
 
 export const ROUTES = {
