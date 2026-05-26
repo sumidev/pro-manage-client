@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { LogOut, Settings, ChevronDown, HelpCircle, Grid3x3 } from "lucide-react";
 import GlobalSearch from "../ui/GlobalSearch";
 import { SIDEBAR_LINKS } from "../../utils/constants";
+import { getMemberAvatarUrl } from "@/utils/memberUtils";
 import { isAuthenticated, logoutUser } from "../../features/auth/authSlice";
 import NotificationBell from "../ui/NotificationBell";
 import AIAssistant from "../ui/AIAssistant";
@@ -86,8 +87,8 @@ export default function AppLayout() {
         <div className="p-3 shrink-0" style={{ borderTop: "1px solid var(--sidebar-border)" }}>
           <div className="flex items-center gap-2.5 px-2 py-2 rounded mb-1" style={{ background: "rgba(255,255,255,0.05)" }}>
             <div className={`w-7 h-7 rounded-full ${avatarColor} flex items-center justify-center text-white text-xs font-bold shrink-0 overflow-hidden`}>
-              {user?.profile_pic ? (
-                <img src={user.profile_pic.startsWith("http") ? user.profile_pic : `http://localhost:8000/storage/${user.profile_pic}`} alt="" className="w-full h-full object-cover" />
+              {getMemberAvatarUrl(user) ? (
+                <img src={getMemberAvatarUrl(user)} alt="" className="w-full h-full object-cover" />
               ) : getInitials(user?.first_name)}
             </div>
             <div className="flex-1 min-w-0">
@@ -149,8 +150,8 @@ export default function AppLayout() {
                 onMouseLeave={(e) => { if (!isProfileOpen) { e.currentTarget.style.background = ""; e.currentTarget.style.color = "var(--sidebar-text)"; } }}
               >
                 <div className={`w-7 h-7 rounded-full ${avatarColor} flex items-center justify-center text-white text-xs font-bold overflow-hidden`}>
-                  {user?.profile_pic ? (
-                    <img src={user.profile_pic.startsWith("http") ? user.profile_pic : `http://localhost:8000/storage/${user.profile_pic}`} alt="" className="w-full h-full object-cover" />
+                  {getMemberAvatarUrl(user) ? (
+                    <img src={getMemberAvatarUrl(user)} alt="" className="w-full h-full object-cover" />
                   ) : getInitials(user?.first_name)}
                 </div>
                 <ChevronDown size={11} className={`transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
@@ -161,8 +162,8 @@ export default function AppLayout() {
                   <div className="px-3 py-2.5" style={{ borderBottom: "1px solid var(--border)" }}>
                     <div className="flex items-center gap-2.5">
                       <div className={`w-8 h-8 rounded-full ${avatarColor} flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0`}>
-                        {user?.profile_pic ? (
-                          <img src={user.profile_pic.startsWith("http") ? user.profile_pic : `http://localhost:8000/storage/${user.profile_pic}`} alt="" className="w-full h-full object-cover" />
+                        {getMemberAvatarUrl(user) ? (
+                          <img src={getMemberAvatarUrl(user)} alt="" className="w-full h-full object-cover" />
                         ) : getInitials(user?.first_name)}
                       </div>
                       <div className="min-w-0">

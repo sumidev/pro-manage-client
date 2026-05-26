@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import { getUserColor } from "../../../utils/helpers";
 import InviteMemberModal from "./InviteMemberModal";
 import { DropdownPortal } from "@/components/ui/DropdownPortal";
+import { getMemberAvatarUrl } from "@/utils/memberUtils";
 
 // Helper — API returns snake_case, some places use camelCase
 const getFirstName = (m) => m.first_name || m.firstName || "";
@@ -50,9 +51,9 @@ const TeamDropdownStatic = ({ members = [], projectId }) => {
               className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white ring-2 ring-white overflow-hidden ${getUserColor(member.id)}`}
               title={`${getFirstName(member)} ${getLastName(member)}`}
             >
-              {member.profile_pic ? (
+              {getMemberAvatarUrl(member) ? (
                 <img
-                  src={member.profile_pic.startsWith("http") ? member.profile_pic : `http://localhost:8000/storage/${member.profile_pic}`}
+                  src={getMemberAvatarUrl(member)}
                   alt=""
                   className="w-full h-full object-cover"
                 />
@@ -156,9 +157,9 @@ const TeamDropdownStatic = ({ members = [], projectId }) => {
                       <div
                         className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0 overflow-hidden ${getUserColor(member.id)}`}
                       >
-                        {member.profile_pic ? (
+                        {getMemberAvatarUrl(member) ? (
                           <img
-                            src={member.profile_pic.startsWith("http") ? member.profile_pic : `http://localhost:8000/storage/${member.profile_pic}`}
+                            src={getMemberAvatarUrl(member)}
                             alt=""
                             className="w-full h-full object-cover"
                           />

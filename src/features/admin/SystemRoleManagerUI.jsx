@@ -1,6 +1,7 @@
 import React from "react";
 import { Search, ChevronLeft, ChevronRight, Shield, Users } from "lucide-react";
 import UsersTableSkeleton from "@/components/skeletons/UsersTableSkeleton";
+import { getMemberAvatarUrl } from "@/utils/memberUtils";
 
 const roleConfig = {
   admin:    { bg: "#ffebe6", color: "#bf2600", label: "Admin" },
@@ -117,9 +118,9 @@ const SystemRoleManagerUI = ({
                     className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
                     style={{ background: getAvatarColor(user.id) }}
                   >
-                    {user.profile_pic ? (
+                    {getMemberAvatarUrl(user) ? (
                       <img
-                        src={user.profile_pic.startsWith("http") ? user.profile_pic : `http://localhost:8000/storage/${user.profile_pic}`}
+                        src={getMemberAvatarUrl(user)}
                         alt=""
                         className="w-full h-full object-cover rounded-full"
                       />
