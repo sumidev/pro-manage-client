@@ -4,6 +4,7 @@ import { Droppable, Draggable } from "@hello-pangea/dnd";
 import Tooltip from "../ui/Tooltip";
 import TaskTypeIcon from "../ui/TaskTypeIcon";
 import { getUserColor } from "../../utils/helpers";
+import { getMemberAvatarUrl } from "@/utils/memberUtils";
 
 const priorityConfig = {
   critical: { bg: "#ffebe6", color: "#bf2600", dot: "#de350b", label: "Critical" },
@@ -135,7 +136,7 @@ const TaskCard = ({ task, onTaskClick, provided, snapshot }) => {
             }`}
           >
             {task.assigned_to ? (
-              task.assigned_to.profile_pic ? (
+              getMemberAvatarUrl(task.assigned_to) ? (
                 <img
                   src={
                     task.assigned_to.profile_pic.startsWith("http")

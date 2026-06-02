@@ -5,6 +5,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { logoutUser, updatePassword, updateProfile } from "@/features/auth/authSlice";
 import toast from "react-hot-toast";
+import { resolveStorageUrl } from "@/config/appConfig";
 
 const SectionCard = ({ children, title, icon: Icon, iconBg, iconColor }) => (
   <div
@@ -47,7 +48,7 @@ const SettingsPage = () => {
       setFirstName(user.first_name || "");
       setLastName(user.last_name || "");
       if (user.profile_pic) {
-        setPreviewUrl(`http://localhost:8000/storage/${user.profile_pic}`);
+        setPreviewUrl(resolveStorageUrl(user.profile_pic));
       }
     }
   }, [user]);

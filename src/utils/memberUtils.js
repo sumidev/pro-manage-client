@@ -1,4 +1,4 @@
-const storageBase = "/storage/";
+import { resolveStorageUrl } from "@/config/appConfig";
 
 export const getMemberFirstName = (m) => m?.first_name || m?.firstName || "";
 export const getMemberLastName = (m) => m?.last_name || m?.lastName || "";
@@ -15,7 +15,7 @@ export const getMemberInitials = (m) => {
 export const getMemberAvatarUrl = (m) => {
   const pic = m?.profile_pic;
   if (!pic) return null;
-  return pic.startsWith("http") ? pic : `${storageBase}${pic}`;
+  return resolveStorageUrl(pic);
 };
 
 /** Shape for UserSearchDropdown and assignee pickers */
