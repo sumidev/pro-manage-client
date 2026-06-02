@@ -52,7 +52,7 @@ const TeamDropdownStatic = ({ members = [], projectId }) => {
             >
               {member.profile_pic ? (
                 <img
-                  src={member.profile_pic.startsWith("http") ? member.profile_pic : `http://localhost:8000/storage/${member.profile_pic}`}
+                  src={member.profile_pic.startsWith("http") ? member.profile_pic : `/storage/${member.profile_pic}`}
                   alt=""
                   className="w-full h-full object-cover"
                 />
@@ -158,7 +158,7 @@ const TeamDropdownStatic = ({ members = [], projectId }) => {
                       >
                         {member.profile_pic ? (
                           <img
-                            src={member.profile_pic.startsWith("http") ? member.profile_pic : `http://localhost:8000/storage/${member.profile_pic}`}
+                            src={member.profile_pic.startsWith("http") ? member.profile_pic : `/storage/${member.profile_pic}`}
                             alt=""
                             className="w-full h-full object-cover"
                           />

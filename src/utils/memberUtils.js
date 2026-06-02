@@ -1,4 +1,4 @@
-const storageBase = "http://localhost:8000/storage/";
+const storageBase = "/storage/";
 
 export const getMemberFirstName = (m) => m?.first_name || m?.firstName || "";
 export const getMemberLastName = (m) => m?.last_name || m?.lastName || "";

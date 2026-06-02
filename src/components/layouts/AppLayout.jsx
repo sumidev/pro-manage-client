@@ -150,7 +150,7 @@ export default function AppLayout() {
               >
                 <div className={`w-7 h-7 rounded-full ${avatarColor} flex items-center justify-center text-white text-xs font-bold overflow-hidden`}>
                   {user?.profile_pic ? (
-                    <img src={user.profile_pic.startsWith("http") ? user.profile_pic : `http://localhost:8000/storage/${user.profile_pic}`} alt="" className="w-full h-full object-cover" />
+                    <img src={user.profile_pic.startsWith("http") ? user.profile_pic : `/storage/${user.profile_pic}`} alt="" className="w-full h-full object-cover" />
                   ) : getInitials(user?.first_name)}
                 </div>
                 <ChevronDown size={11} className={`transition-transform ${isProfileOpen ? "rotate-180" : ""}`} />
@@ -162,7 +162,7 @@ export default function AppLayout() {
                     <div className="flex items-center gap-2.5">
                       <div className={`w-8 h-8 rounded-full ${avatarColor} flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0`}>
                         {user?.profile_pic ? (
-                          <img src={user.profile_pic.startsWith("http") ? user.profile_pic : `http://localhost:8000/storage/${user.profile_pic}`} alt="" className="w-full h-full object-cover" />
+                          <img src={user.profile_pic.startsWith("http") ? user.profile_pic : `/storage/${user.profile_pic}`} alt="" className="w-full h-full object-cover" />
                         ) : getInitials(user?.first_name)}
                       </div>
                       <div className="min-w-0">

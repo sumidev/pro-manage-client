@@ -140,7 +140,7 @@ const TaskCard = ({ task, onTaskClick, provided, snapshot }) => {
                   src={
                     task.assigned_to.profile_pic.startsWith("http")
                       ? task.assigned_to.profile_pic
-                      : `http://localhost:8000/storage/${task.assigned_to.profile_pic}`
+                      : `/storage/${task.assigned_to.profile_pic}`
                   }
                   alt=""
                   className="w-full h-full object-cover"

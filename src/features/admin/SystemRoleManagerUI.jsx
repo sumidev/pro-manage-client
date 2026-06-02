@@ -119,7 +119,7 @@ const SystemRoleManagerUI = ({
                   >
                     {user.profile_pic ? (
                       <img
-                        src={user.profile_pic.startsWith("http") ? user.profile_pic : `http://localhost:8000/storage/${user.profile_pic}`}
+                        src={user.profile_pic.startsWith("http") ? user.profile_pic : `/storage/${user.profile_pic}`}
                         alt=""
                         className="w-full h-full object-cover rounded-full"
                       />
