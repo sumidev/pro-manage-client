@@ -106,6 +106,23 @@ export const searchProject = createAsyncThunk(
   },
 );
 
+const addReplyToComment = (comments, parentId, newComment) => {
+  for (let i = 0; i < comments.length; i++) {
+    if (String(comments[i].id) === String(parentId)) {
+      if (!comments[i].replies) {
+        comments[i].replies = [];
+      }
+      comments[i].replies.push(newComment);
+      return true;
+    }
+    if (comments[i].replies && comments[i].replies.length > 0) {
+      const found = addReplyToComment(comments[i].replies, parentId, newComment);
+      if (found) return true;
+    }
+  }
+  return false;
+};
+
 const projectsSlice = createSlice({
   name: "projects",
   initialState: {
@@ -294,17 +311,13 @@ const projectsSlice = createSlice({
         const { comment: newComment, taskId, stage } = action.payload;
         if (state.project?.tasks?.[stage]) {
           const taskIndex = state.project.tasks[stage].findIndex(
-            (t) => t.id === taskId,
+            (t) => String(t.id) === String(taskId),
           );
           if (taskIndex === -1) return;
           const task = state.project.tasks[stage][taskIndex];
-          if (newComment.parent_id !== null) {
-            const commentIndex = task.comments?.findIndex(
-              (c) => c.id === newComment.parent_id,
-            );
-            if (commentIndex !== undefined && commentIndex !== -1) {
-              task.comments[commentIndex].replies.push(newComment);
-            }
+          if (newComment.parent_id !== null && newComment.parent_id !== undefined) {
+            if (!task.comments) task.comments = [];
+            addReplyToComment(task.comments, newComment.parent_id, newComment);
           } else {
             if (!task.comments) task.comments = [];
             task.comments.push(newComment);

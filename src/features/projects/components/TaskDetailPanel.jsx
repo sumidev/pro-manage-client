@@ -48,6 +48,8 @@ const getStageStyle = (stage = "") => {
 
 const TaskDetailPanel = ({ task, stages, onClose, members, projectId }) => {
   const [comment, setComment] = useState("");
+  const [selectedFile, setSelectedFile] = useState(null);
+  const fileInputRef = useRef(null);
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -97,24 +99,53 @@ const TaskDetailPanel = ({ task, stages, onClose, members, projectId }) => {
   };
 
   const handleComment = () => {
-    if (!comment.trim()) return;
-    const payload = {
-      commentable_id: taskId,
-      commentable_type: "task",
-      description: comment,
-      parent_id: null,
-    };
+    if (!comment.trim() && !selectedFile) return;
+    
+    let payload;
+    if (selectedFile) {
+      payload = new FormData();
+      payload.append("commentable_id", taskId);
+      payload.append("commentable_type", "task");
+      payload.append("description", comment);
+      payload.append("attachment", selectedFile);
+    } else {
+      payload = {
+        commentable_id: taskId,
+        commentable_type: "task",
+        description: comment,
+        parent_id: null,
+      };
+    }
+    
     dispatch(addComment({ payload, taskId, stage: taskForm.stage }));
     setComment("");
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const handleInlineReply = (parentId, replyText) => {
-    const payload = {
-      commentable_id: taskId,
-      commentable_type: "task",
-      description: replyText,
-      parent_id: parentId,
-    };
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    }
+  };
+
+  const handleInlineReply = (parentId, replyText, replyFile) => {
+    let payload;
+    if (replyFile) {
+      payload = new FormData();
+      payload.append("commentable_id", taskId);
+      payload.append("commentable_type", "task");
+      payload.append("description", replyText);
+      payload.append("parent_id", parentId);
+      payload.append("attachment", replyFile);
+    } else {
+      payload = {
+        commentable_id: taskId,
+        commentable_type: "task",
+        description: replyText,
+        parent_id: parentId,
+      };
+    }
     dispatch(addComment({ payload, taskId, stage: taskForm.stage }));
   };
 
@@ -438,11 +469,29 @@ const TaskDetailPanel = ({ task, stages, onClose, members, projectId }) => {
                     style={{ background: "#fafbfc", color: "#172b4d", minHeight: "64px" }}
                     placeholder="Add a comment... (Ctrl+Enter to submit)"
                   />
+                  
+                  {selectedFile && (
+                    <div className="px-3 py-2 flex items-center gap-2 text-xs" style={{ background: "#f4f5f7" }}>
+                      <Paperclip size={12} style={{ color: "#6b778c" }} />
+                      <span className="truncate flex-1 font-medium" style={{ color: "#172b4d" }}>{selectedFile.name}</span>
+                      <button onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }} className="p-1 hover:bg-gray-200 rounded">
+                        <X size={12} />
+                      </button>
+                    </div>
+                  )}
+
                   <div
                     className="flex items-center justify-between px-3 py-2"
                     style={{ background: "#f4f5f7", borderTop: "1px solid #dfe1e6" }}
                   >
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      style={{ display: "none" }}
+                      onChange={handleFileChange}
+                    />
                     <button
+                      onClick={() => fileInputRef.current?.click()}
                       className="p-1 rounded transition-all"
                       style={{ color: "#97a0af" }}
                       onMouseEnter={(e) => { e.currentTarget.style.color = "#172b4d"; }}
@@ -451,7 +500,7 @@ const TaskDetailPanel = ({ task, stages, onClose, members, projectId }) => {
                       <Paperclip size={13} />
                     </button>
                     <button
-                      disabled={!comment.trim()}
+                      disabled={!comment.trim() && !selectedFile}
                       onClick={handleComment}
                       className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                       style={{ background: "#0052cc" }}

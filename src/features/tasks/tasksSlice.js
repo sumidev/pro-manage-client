@@ -59,7 +59,10 @@ export const addComment = createAsyncThunk(
   "tasks/comments",
   async ({payload,taskId,stage}, thunkAPI) => {
     try {
-      const response = await api.post(`comments`, payload);
+      const config = payload instanceof FormData 
+        ? { headers: { "Content-Type": "multipart/form-data" } } 
+        : {};
+      const response = await api.post(`comments`, payload, config);
       return {comment : response.data.data ,taskId ,stage};
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response.data);
