@@ -138,11 +138,7 @@ const TaskCard = ({ task, onTaskClick, provided, snapshot }) => {
             {task.assigned_to ? (
               getMemberAvatarUrl(task.assigned_to) ? (
                 <img
-                  src={
-                    task.assigned_to.profile_pic.startsWith("http")
-                      ? task.assigned_to.profile_pic
-                      : `/storage/${task.assigned_to.profile_pic}`
-                  }
+                  src={getMemberAvatarUrl(task.assigned_to)}
                   alt=""
                   className="w-full h-full object-cover"
                 />

@@ -8,6 +8,7 @@ import {
   Paperclip,
   X,
 } from "lucide-react";
+import { getMemberAvatarUrl } from "@/utils/memberUtils";
 
 const flattenReplies = (replies) => {
   let flat = [];
@@ -59,6 +60,7 @@ export const Comment = ({ comment, onSubmitReply, isReply = false, parentComment
     : "Just now";
 
   const avatarUrl =
+    getMemberAvatarUrl(comment?.user) ||
     comment?.user?.avatar ||
     `https://ui-avatars.com/api/?name=${comment?.user?.name?.replace(
       " ",

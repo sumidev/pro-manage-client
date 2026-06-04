@@ -53,7 +53,7 @@ const TeamDropdownStatic = ({ members = [], projectId }) => {
             >
               {getMemberAvatarUrl(member) ? (
                 <img
-                  src={member.profile_pic.startsWith("http") ? member.profile_pic : `/storage/${member.profile_pic}`}
+                  src={getMemberAvatarUrl(member)}
                   alt=""
                   className="w-full h-full object-cover"
                 />
@@ -159,7 +159,7 @@ const TeamDropdownStatic = ({ members = [], projectId }) => {
                       >
                         {getMemberAvatarUrl(member) ? (
                           <img
-                            src={member.profile_pic.startsWith("http") ? member.profile_pic : `/storage/${member.profile_pic}`}
+                            src={getMemberAvatarUrl(member)}
                             alt=""
                             className="w-full h-full object-cover"
                           />

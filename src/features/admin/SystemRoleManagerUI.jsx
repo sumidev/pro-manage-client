@@ -120,7 +120,7 @@ const SystemRoleManagerUI = ({
                   >
                     {getMemberAvatarUrl(user) ? (
                       <img
-                        src={user.profile_pic.startsWith("http") ? user.profile_pic : `/storage/${user.profile_pic}`}
+                        src={getMemberAvatarUrl(user)}
                         alt=""
                         className="w-full h-full object-cover rounded-full"
                       />
