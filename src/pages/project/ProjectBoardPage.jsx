@@ -44,6 +44,7 @@ const ProjectBoardPage = () => {
   useEffect(() => {
     if (!taskFromUrl || !allTasks.length) return;
     const match = allTasks.find((t) => String(t.id) === String(taskFromUrl));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (match) setSelectedTask(match);
   }, [taskFromUrl, allTasks]);
 

@@ -7,6 +7,7 @@ const DeleteProjectModal = ({ isOpen, onClose, projectName, onConfirm, isDeletin
   const CONFIRM_WORD = "DELETE";
   const isReady = inputValue === CONFIRM_WORD && !isDeleting;
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (isOpen) setInputValue(""); }, [isOpen]);
 
   return (

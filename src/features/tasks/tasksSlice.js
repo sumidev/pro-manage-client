@@ -47,7 +47,7 @@ export const deleteTask = createAsyncThunk(
   "tasks/delete",
   async ({id, stage }, thunkAPI) => {
     try {
-      const response = await api.delete(`tasks/${id}`);
+      await api.delete(`tasks/${id}`);
       return {stage, id};
     } catch (error) {
       return thunkAPI.rejectWithValue(error.response.data);

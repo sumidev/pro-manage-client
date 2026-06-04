@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
-  fetchProjects,
   createProject,
 } from "../../features/projects/projectsSlice";
 import { Plus, Search as SearchIcon, LayoutGrid, List } from "lucide-react";

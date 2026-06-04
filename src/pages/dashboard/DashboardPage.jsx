@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { Briefcase, CheckCircle2, Clock, Plus, ChevronRight, TrendingUp } from "lucide-react";
+import { Briefcase, CheckCircle2, Clock, Plus, ChevronRight } from "lucide-react";
 import { fetchDashboardStats } from "../../features/dashboard/dashboardSlice";
 import { STATS_CONFIG } from "../../features/dashboard/dashboardConstants";
 import { formatDate } from "../../utils/dateUtils";
@@ -27,7 +27,8 @@ const iconBgMap = [
   { bg: "var(--red-light)",    color: "var(--red-text)" },
 ];
 
-const StatCard = ({ title, value, icon: Icon, index }) => {
+const StatCard = ({ title, value, icon, index }) => {
+  const Icon = icon;
   const { bg, color } = iconBgMap[index % iconBgMap.length];
   return (
     <div className="stat-card">

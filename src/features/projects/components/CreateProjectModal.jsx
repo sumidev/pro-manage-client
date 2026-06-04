@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { X, FolderPlus, ChevronDown, Check, Calendar, Tag } from "lucide-react";
 import { DropdownPortal } from "@/components/ui/DropdownPortal";
 

@@ -7,7 +7,9 @@ import { logoutUser, updatePassword, updateProfile } from "@/features/auth/authS
 import toast from "react-hot-toast";
 import { resolveStorageUrl } from "@/config/appConfig";
 
-const SectionCard = ({ children, title, icon: Icon, iconBg, iconColor }) => (
+const SectionCard = ({ children, title, icon, iconBg, iconColor }) => {
+  const Icon = icon;
+  return (
   <div
     className="rounded border overflow-hidden"
     style={{ background: "#fff", borderColor: "#dfe1e6" }}
@@ -29,6 +31,7 @@ const SectionCard = ({ children, title, icon: Icon, iconBg, iconColor }) => (
     <div className="px-5 py-5">{children}</div>
   </div>
 );
+};
 
 const SettingsPage = () => {
   const dispatch = useDispatch();

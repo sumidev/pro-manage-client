@@ -30,11 +30,12 @@ export const Comment = ({ comment, onSubmitReply, isReply = false, parentComment
   const [replyFile, setReplyFile] = useState(null);
   const fileInputRef = useRef(null);
 
+  const replies = comment?.replies;
   const flattenedReplies = useMemo(() => {
-    if (isReply || !comment?.replies) return [];
-    const list = flattenReplies(comment.replies);
+    if (isReply || !replies) return [];
+    const list = flattenReplies(replies);
     return list.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
-  }, [comment?.replies, isReply]);
+  }, [replies, isReply]);
 
   const commentUserMap = useMemo(() => {
     if (isReply) return {};

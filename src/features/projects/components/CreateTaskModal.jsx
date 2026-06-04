@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { X, Plus, ChevronDown, Check, Flag, User, Calendar, Layers } from "lucide-react";
 import { DropdownPortal } from "@/components/ui/DropdownPortal";
 import InviteMemberButton from "@/components/ui/InviteMemberButton";

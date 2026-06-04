@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { fetchProjects } from "../projectsSlice";
 
+const initialFilter = {
+  dueDate: null,
+  type: [],
+};
+
 export const useProjectFilters = () => {
-  const initialFilter = {
-    dueDate: null,
-    type: [],
-  };
   const [filters, setFilters] = useState(initialFilter);
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");

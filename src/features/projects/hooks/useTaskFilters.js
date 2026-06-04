@@ -1,12 +1,13 @@
 import { useCallback, useMemo, useState } from "react";
 
+const initialFilter = {
+  search: "",
+  dueDate: null,
+  priorities: [],
+  assignees: [],
+};
+
 export const useTaskFilters = (tasks) => {
-  const initialFilter = {
-    search: "",
-    dueDate: null,
-    priorities: [],
-    assignees: [],
-  };
   const [filters, setFilters] = useState(initialFilter);
 
   const handleFilterChange = useCallback((key, value) => {

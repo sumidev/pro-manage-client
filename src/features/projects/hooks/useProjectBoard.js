@@ -92,7 +92,7 @@ export const useProjectBoard = () => {
 
   // Real-time task movement via Echo
   useEffect(() => {
-    const channel = echo
+    echo
       .private(`project.${projectId}`)
       .listen(".task.moved", (data) => {
         dispatch(syncTaskMovement(data.task));

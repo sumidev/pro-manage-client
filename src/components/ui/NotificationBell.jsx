@@ -12,9 +12,19 @@ const NotificationBell = () => {
   const dropdownRef = useRef(null);
   const user = useSelector((state) => state.auth.user);
 
+  const fetchNotifications = async () => {
+    try {
+      const response = await api.get("/notifications");
+      setNotifications(response.data.data);
+    } catch (error) {
+      console.error("Failed to fetch notifications:", error);
+    }
+  };
+
   useEffect(() => {
     if (!user?.id) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchNotifications();
 
     const channelName = `App.Models.User.${user.id}`;
@@ -61,15 +71,6 @@ const NotificationBell = () => {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const fetchNotifications = async () => {
-    try {
-      const response = await api.get("/notifications");
-      setNotifications(response.data.data);
-    } catch (error) {
-      console.error("Failed to fetch notifications:", error);
-    }
-  };
 
   const handleMarkAsRead = async (id, actionUrl) => {
     try {

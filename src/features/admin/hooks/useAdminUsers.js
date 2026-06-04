@@ -54,6 +54,7 @@ export const useAdminUsers = () => {
         error: "Failed to update role.",
       });
     } catch (err) {
+      console.error("Role update failed:", err);
       setUsers(previousUsers);
       alert("Role update failed.");
     }

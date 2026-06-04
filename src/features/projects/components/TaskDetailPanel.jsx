@@ -86,7 +86,7 @@ const TaskDetailPanel = ({ task, stages, onClose, members, projectId }) => {
   useEffect(() => {
     const payload = { id: taskId, type: "task" };
     dispatch(getComments({ payload, taskId, stage: taskForm.stage }));
-  }, [taskId]);
+  }, [taskId, dispatch, taskForm.stage]);
 
   const handleStatus = (stageId, stage, oldStage) => {
     dispatch(moveTaskOptimistically({ taskId: stageId, fromStage: oldStage, toStage: stage, newIndex: 0 }));

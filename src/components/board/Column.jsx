@@ -24,6 +24,7 @@ const getColumnAccent = (stageId = "") => {
   return "#94a3b8";
 };
 
+/* eslint-disable react-hooks/refs */
 const TaskCard = ({ task, onTaskClick, provided, snapshot }) => {
   const pc = priorityConfig[task.priority] || priorityConfig.medium;
   const commentCount = Array.isArray(task.comments)
@@ -154,6 +155,7 @@ const TaskCard = ({ task, onTaskClick, provided, snapshot }) => {
     </div>
   );
 };
+/* eslint-enable react-hooks/refs */
 
 const Column = ({ title, tasks = [], onTaskClick, stageId }) => {
   const accent = getColumnAccent(stageId);

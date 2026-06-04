@@ -1,6 +1,5 @@
 import React, { useMemo, useRef, useState } from "react";
 import { Filter, X, Check, Search, Calendar } from "lucide-react";
-import { getUserColor } from "../../../utils/helpers";
 import { dueDates, priorities, unAssignedMember } from "../../../constants/filterConstants";
 import { MembersList } from "./filterComponents/MembersList";
 import { DropdownPortal } from "@/components/ui/DropdownPortal";
@@ -15,14 +14,13 @@ export const TaskFilters = ({
   const [searchMember, setSearchMember] = useState("");
   const btnRef = useRef(null);
 
-  const allMembers = [unAssignedMember, ...members];
-
   const filteredMembers = useMemo(() => {
+    const allMembers = [unAssignedMember, ...(members || [])];
     if (!searchMember) return allMembers;
     return allMembers.filter((m) =>
       m.firstName?.toLowerCase().includes(searchMember.toLowerCase())
     );
-  }, [searchMember, allMembers]);
+  }, [searchMember, members]);
 
   const activeCount =
     (filters.dueDate ? 1 : 0) +
