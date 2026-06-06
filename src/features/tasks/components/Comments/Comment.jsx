@@ -63,7 +63,7 @@ export const Comment = ({ comment, onSubmitReply, isReply = false, parentComment
 
   const avatarUrl =
     getMemberAvatarUrl(comment?.user) ||
-    comment?.user?.avatar ||
+    comment?.user?.avatar ? resolveStorageUrl(comment.user.avatar) :
     `https://ui-avatars.com/api/?name=${comment?.user?.name?.replace(
       " ",
       "+"
