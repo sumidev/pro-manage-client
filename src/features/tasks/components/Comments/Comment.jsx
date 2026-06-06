@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { getMemberAvatarUrl } from "@/utils/memberUtils";
+import { resolveStorageUrl } from "@/config/appConfig";
 
 const flattenReplies = (replies) => {
   let flat = [];
@@ -153,11 +154,12 @@ export const Comment = ({ comment, onSubmitReply, isReply = false, parentComment
             <div className="mt-2 mb-3 flex flex-wrap gap-2">
               {comment.attachments.map((attach) => {
                 const url = attach.url;
+                const resolvedUrl = resolveStorageUrl(url);
                 const name = attach.name || "Attachment";
                 return isImage(url) ? (
-                  <a key={attach.id || url} href={url} target="_blank" rel="noopener noreferrer" className="block max-w-sm">
+                  <a key={attach.id || url} href={resolvedUrl} target="_blank" rel="noopener noreferrer" className="block max-w-sm">
                     <img
-                      src={url}
+                      src={resolvedUrl}
                       alt={name}
                       className="max-h-48 max-w-full rounded-md border border-gray-200 shadow-sm object-contain"
                     />
@@ -165,7 +167,7 @@ export const Comment = ({ comment, onSubmitReply, isReply = false, parentComment
                 ) : (
                   <a
                     key={attach.id || url}
-                    href={url}
+                    href={resolvedUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-md hover:bg-gray-100 transition-colors"
