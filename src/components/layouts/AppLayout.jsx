@@ -48,11 +48,8 @@ export default function AppLayout() {
         style={{ background: "var(--sidebar-bg)", borderRight: "1px solid var(--sidebar-border)" }}
       >
         {/* Logo */}
-        <div className="h-12 flex items-center px-4 gap-2.5 shrink-0" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
-          <div className="w-7 h-7 rounded flex items-center justify-center text-white font-black text-sm" style={{ background: "var(--accent)" }}>
-            P
-          </div>
-          <span className="text-white font-bold text-[15px] tracking-tight">ProManage</span>
+        <div className="h-14 flex items-center px-4 shrink-0" style={{ borderBottom: "1px solid var(--sidebar-border)" }}>
+          <img src="/logo.png" alt="ProManage Logo" className="w-36 h-auto object-contain object-left" style={{ mixBlendMode: 'screen' }} />
         </div>
 
         {/* Nav */}

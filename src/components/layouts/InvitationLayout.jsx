@@ -14,14 +14,8 @@ export default function InvitationLayout({ children }) {
         className="hidden lg:flex flex-col justify-between w-[400px] shrink-0 p-10"
         style={{ background: "var(--sidebar-bg)" }}
       >
-        <div className="flex items-center gap-2.5">
-          <div
-            className="w-8 h-8 rounded flex items-center justify-center text-white font-black text-sm"
-            style={{ background: "var(--accent)" }}
-          >
-            P
-          </div>
-          <span className="text-white font-bold text-lg tracking-tight">ProManage</span>
+        <div className="flex items-center mb-6">
+          <img src="/logo.png" alt="ProManage Logo" className="w-48 h-auto object-contain object-left" style={{ mixBlendMode: 'screen' }} />
         </div>
 
         <div>
@@ -49,14 +43,9 @@ export default function InvitationLayout({ children }) {
           className="w-full max-w-[500px] rounded-lg border p-8"
           style={{ background: "var(--bg-card)", borderColor: "var(--border)", boxShadow: "var(--shadow-md)" }}
         >
-          <div className="flex items-center gap-2 mb-6 lg:hidden">
-            <div
-              className="w-7 h-7 rounded flex items-center justify-center text-white font-black text-sm"
-              style={{ background: "var(--accent)" }}
-            >
-              P
-            </div>
-            <span className="font-bold text-base" style={{ color: "var(--text-primary)" }}>ProManage</span>
+          {/* Mobile logo */}
+          <div className="flex items-center mb-6 lg:hidden">
+            <img src="/logo.png" alt="ProManage Logo" className="w-36 h-auto object-contain object-left" style={{ mixBlendMode: 'screen' }} />
           </div>
 
           {children}
