@@ -12,7 +12,7 @@ export const RegisterPage = () => {
     const result = await dispatch(registerUser(payload));
     if (registerUser.fulfilled.match(result)) {
       await processPendingInvitation();
-      navigate("/dashboard", { replace: true });
+      navigate("/verify-email", { state: { email: payload.email } });
     }
   };
 

@@ -108,6 +108,18 @@ export const resetPassword = createAsyncThunk(
   },
 );
 
+export const resendVerificationEmail = createAsyncThunk(
+  "auth/resendVerificationEmail",
+  async ({ email }, thunkAPI) => {
+    try {
+      const response = await api.post("/email/verification-notification", { email });
+      return response.data;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(error.response?.data);
+    }
+  },
+);
+
 const getAuthErrorMessage = (payload) => {
   if (!payload) return "Something went wrong.";
   if (typeof payload.message === "string") return payload.message;

@@ -1,10 +1,12 @@
-import { Navigate, Outlet } from "react-router-dom";
+import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { isAuthenticated } from "../../features/auth/authSlice";
 import { useSelector } from "react-redux";
 
 export default function GuestLayout() {
   const isAuth = useSelector(isAuthenticated);
-  if (isAuth) return <Navigate to="/dashboard" />;
+  const location = useLocation();
+
+  if (isAuth && location.pathname !== "/verify-email") return <Navigate to="/dashboard" />;
 
   return (
     <div
