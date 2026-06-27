@@ -24,16 +24,7 @@ const UserSearchDropdown = ({
     [users],
   );
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setIsOpen(false);
-        setSearchTerm("");
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+
 
   const filteredUsers = useMemo(() => {
     const q = searchTerm.toLowerCase();

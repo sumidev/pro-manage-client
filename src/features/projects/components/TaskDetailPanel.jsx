@@ -74,16 +74,6 @@ const TaskDetailPanel = ({ task, stages, onClose, members, projectId }) => {
   useEffect(() => { setTaskForm(taskToRender); }, [taskToRender]);
 
   useEffect(() => {
-    function handleClickOutside(event) {
-      if (statusRef.current && !statusRef.current.contains(event.target)) {
-        setIsStatusOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  useEffect(() => {
     const payload = { id: taskId, type: "task" };
     dispatch(getComments({ payload, taskId, stage: taskForm.stage }));
   }, [taskId, dispatch, taskForm.stage]);
